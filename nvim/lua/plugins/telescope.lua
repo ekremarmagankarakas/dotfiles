@@ -2,12 +2,26 @@
 -- Telescope
 ----------------------------------------------------------------------
 return {
-	{ "nvim-telescope/telescope-ui-select.nvim" },
-	{ "nvim-telescope/telescope-fzf-native.nvim", build = "make" },
+	{
+		"nvim-telescope/telescope-ui-select.nvim",
+		cond = function()
+			return require("profile").plugin_enabled("telescope-ui-select.nvim")
+		end,
+	},
+	{
+		"nvim-telescope/telescope-fzf-native.nvim",
+		build = "make",
+		cond = function()
+			return require("profile").plugin_enabled("telescope-fzf-native.nvim")
+		end,
+	},
 
 	{
 		"nvim-telescope/telescope.nvim",
 		branch = "master",
+		cond = function()
+			return require("profile").plugin_enabled("telescope.nvim")
+		end,
 		dependencies = { "nvim-lua/plenary.nvim" },
 		keys = {
 			{ "<leader>ff", "<cmd>Telescope find_files<cr>", desc = "Find: files" },
@@ -41,17 +55,38 @@ return {
 			{ "<leader>f/", "<cmd>Telescope search_history<cr>", desc = "Find: search history" },
 			{ "<leader>fq", "<cmd>Telescope quickfix<cr>", desc = "Find: quickfix" },
 			{ "<leader>fl", "<cmd>Telescope loclist<cr>", desc = "Find: loclist" },
-			{ "<leader>gtc", "<cmd>Telescope git_commits<cr>", desc = "Git: commits (Telescope)" },
-			{ "<leader>gts", "<cmd>Telescope git_status<cr>", desc = "Git: status (Telescope)" },
-			{ "<leader>gtB", "<cmd>Telescope git_branches<cr>", desc = "Git: branches (Telescope)" },
+			{
+				"<leader>gtc",
+				function()
+					require("config.vcs").current().pickers.commits()
+				end,
+				desc = "VCS: commits (Telescope)",
+			},
+			{
+				"<leader>gts",
+				function()
+					require("config.vcs").current().pickers.status()
+				end,
+				desc = "VCS: status (Telescope)",
+			},
+			{
+				"<leader>gtB",
+				function()
+					require("config.vcs").current().pickers.branches()
+				end,
+				desc = "VCS: branches (Telescope)",
+			},
+			{
+				"<leader>gtb",
+				function()
+					require("config.vcs").current().pickers.file_history()
+				end,
+				desc = "VCS: file history (Telescope)",
+			},
 			{
 				"<leader>fa",
 				function()
-					local dirs = {
-						"~/Dev",
-						"~/Northeastern",
-						"~/Work",
-					}
+					local dirs = require("profile").get().search_dirs
 
 					local search_dirs = {}
 					for _, dir in ipairs(dirs) do
@@ -118,6 +153,10 @@ return {
 
 			telescope.load_extension("fzf")
 			telescope.load_extension("ui-select")
+
+			for _, ext in ipairs(require("profile").extra("telescope_extensions")) do
+				pcall(telescope.load_extension, ext)
+			end
 		end,
 	},
 }

@@ -6,6 +6,9 @@ return {
 	----------------------------------------------------------------------
 	{
 		"zbirenbaum/copilot.lua",
+		cond = function()
+			return require("profile").plugin_enabled("copilot.lua")
+		end,
 		cmd = "Copilot",
 		event = "InsertEnter",
 		keys = {
@@ -42,6 +45,9 @@ return {
 	----------------------------------------------------------------------
 	{
 		"CopilotC-Nvim/CopilotChat.nvim",
+		cond = function()
+			return require("profile").plugin_enabled("CopilotChat.nvim")
+		end,
 		dependencies = {
 			"zbirenbaum/copilot.lua",
 			"nvim-lua/plenary.nvim",

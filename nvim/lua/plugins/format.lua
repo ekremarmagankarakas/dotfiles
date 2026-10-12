@@ -1,5 +1,8 @@
 return {
 	"stevearc/conform.nvim",
+	cond = function()
+		return require("profile").plugin_enabled("conform.nvim")
+	end,
 	keys = {
 		{
 			"<leader>lf",
@@ -9,8 +12,10 @@ return {
 			desc = "Format file",
 		},
 	},
-	opts = {
-		formatters_by_ft = {
+	opts = function()
+		local profile = require("profile")
+
+		local formatters_by_ft = {
 			lua = { "stylua" },
 			python = { "ruff_format" },
 			c = { "clang_format" },
@@ -34,11 +39,17 @@ return {
 			r = { "r_styler" },
 			tex = { "tex_fmt" },
 			latex = { "tex_fmt" },
-		},
-		default_format_opts = {
-			lsp_format = "fallback",
-		},
-		formatters = {
+		}
+
+		for ft in pairs(formatters_by_ft) do
+			if not profile.format_enabled(ft) then
+				formatters_by_ft[ft] = nil
+			end
+		end
+
+		formatters_by_ft = vim.tbl_deep_extend("force", formatters_by_ft, profile.extra("formatters_by_ft"))
+
+		local formatters = {
 			ruff_format = {
 				command = "ruff",
 				args = { "format", "--stdin-filename", "$FILENAME", "-" },
@@ -62,6 +73,16 @@ return {
 				},
 				stdin = false,
 			},
-		},
-	},
+		}
+
+		formatters = vim.tbl_deep_extend("force", formatters, profile.extra("formatters"))
+
+		return {
+			formatters_by_ft = formatters_by_ft,
+			default_format_opts = {
+				lsp_format = "fallback",
+			},
+			formatters = formatters,
+		}
+	end,
 }

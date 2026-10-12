@@ -4,6 +4,9 @@ return {
 	----------------------------------------------------------------------
 	{
 		"lervag/vimtex",
+		cond = function()
+			return require("profile").plugin_enabled("vimtex")
+		end,
 		ft = { "tex" },
 		init = function()
 			vim.g.vimtex_view_method = "general" -- use default

@@ -117,7 +117,9 @@ Leader: `Space` | Local leader: `\`
 | `<leader>x` | v | Cut to system clipboard |
 | `<leader>/` | n | Clear search highlight |
 | `<leader>t` | n | Open terminal split |
+| `<leader>T` | n | Open terminal in new tab |
 | `<Esc><Esc>` | t | Exit terminal insert mode |
+| `yd` | n | Yank current file's directory to system clipboard |
 | `<leader>sj` | n | Toggle `j/k` and `gj/gk` |
 | `<leader>st` | n | Theme picker |
 | `<leader>sr` | n | Search and replace in file |
@@ -151,6 +153,11 @@ Leader: `Space` | Local leader: `\`
 | Key | Mode | Description |
 |-----|------|-------------|
 | `gd` `gD` `gy` | n | Go to definition / declaration / type definition |
+| `K` | n | Hover |
+| `<leader>lr` | n | Rename symbol |
+| `<leader>la` | n | Code action |
+| `<C-s>` | i | Signature help |
+| `grn` `gra` `grr` `gri` `gO` | n | Rename / code action / references / implementation / symbols (Neovim 0.11+ defaults) |
 | `<leader>lf` | n | Format file |
 | `<leader>ltc` | n | Toggle completion suggestions |
 | `<leader>ll` | n | Run linters |
@@ -188,10 +195,11 @@ Leader: `Space` | Local leader: `\`
 | `<leader>f/` | n | Search history |
 | `<leader>fq` | n | Quickfix list |
 | `<leader>fl` | n | Location list |
-| `<leader>fa` | n | Find files in configured base directories |
-| `<leader>gtc` | n | Git commits |
-| `<leader>gts` | n | Git status |
-| `<leader>gtB` | n | Git branches |
+| `<leader>fa` | n | Find files in configured base directories (`profile.search_dirs`) |
+| `<leader>gtc` | n | VCS: commits |
+| `<leader>gts` | n | VCS: status |
+| `<leader>gtB` | n | VCS: branches |
+| `<leader>gtb` | n | VCS: file history (commits touching current file) |
 
 ### Flash (`lua/plugins/tools.lua`)
 
@@ -217,7 +225,11 @@ Leader: `Space` | Local leader: `\`
 | `][` `[]` | n/x/o | Next / previous class end |
 | `]a` `[a` | n/x/o | Next / previous argument |
 
-### Git (`lua/plugins/git.lua`)
+### Git / VCS (`lua/plugins/git.lua`, `lua/config/vcs.lua`)
+
+Hunk, diff, and blame operations are routed through `config.vcs`, a pluggable
+layer defaulting to Git (see `lua/config/vcs.lua`); swapping the backend is a
+matter of adding another entry to `vcs.backends` and setting `profile.vcs`.
 
 | Key | Mode | Description |
 |-----|------|-------------|
@@ -229,7 +241,8 @@ Leader: `Space` | Local leader: `\`
 | `<leader>gS` | n | Stage buffer |
 | `<leader>gR` | n | Reset buffer |
 | `<leader>gu` | n | Undo stage hunk |
-| `<leader>gb` | n | Toggle line blame |
+| `<leader>gb` | n | Toggle inline line blame |
+| `<leader>gB` | n | Full buffer blame |
 | `<leader>gT` | n | Toggle git signs |
 | `ih` | o/x | Select hunk text object |
 | `<leader>gdo` | n | Open Diffview |
@@ -296,6 +309,18 @@ Leader: `Space` | Local leader: `\`
 | `<leader>mb` `<leader>mB` | n | Mkdnflow back / forward |
 | `<leader>mt` | n/v | Mkdnflow toggle todo |
 | `<C-j>` `<C-k>` | i/s | LuaSnip expand-or-jump / jump back |
+
+## Profiles
+
+Named profiles (`personal`, `minimal`) toggle plugins, LSP servers, formatters,
+and `vim.opt`/`vim.g` settings — see `lua/profile.lua`. Select one with
+`vim.g.nvim_profile` or the `NVIM_PROFILE` env var (default: `personal`).
+Machine-local overrides go in the gitignored `lua/profile_local.lua` or any
+file under `lua/local/`, deep-merged on top of the named profile.
+
+| Command | Description |
+|---------|--------------|
+| `:Profile` | Show the active profile name |
 
 ## Which-key Groups
 

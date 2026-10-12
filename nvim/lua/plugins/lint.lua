@@ -1,5 +1,8 @@
 return {
 	"mfussenegger/nvim-lint",
+	cond = function()
+		return require("profile").plugin_enabled("nvim-lint")
+	end,
 	event = { "BufReadPre", "BufNewFile" },
 	config = function()
 		local lint = require("lint")

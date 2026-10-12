@@ -1,5 +1,8 @@
 return {
 	"mfussenegger/nvim-dap",
+	cond = function()
+		return require("profile").plugin_enabled("nvim-dap")
+	end,
 	dependencies = {
 		-- UI and Core Helpers
 		"rcarriga/nvim-dap-ui",

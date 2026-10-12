@@ -4,6 +4,9 @@ return {
 	----------------------------------------------------------------------
 	{
 		"folke/which-key.nvim",
+		cond = function()
+			return require("profile").plugin_enabled("which-key.nvim")
+		end,
 		event = "VeryLazy",
 		opts = {},
 		keys = {
@@ -26,7 +29,7 @@ return {
 			local wk = require("which-key")
 			wk.setup(opts)
 
-			wk.add({
+			local groups = {
 				{ "<leader>a", group = "ai" },
 				{ "<leader>d", group = "debug" },
 				{ "<leader>f", group = "find" },
@@ -38,7 +41,11 @@ return {
 				{ "<leader>s", group = "settings" },
 				{ "<leader>w", group = "windows" },
 				{ "<leader>?", group = "whichkey" },
-			})
+			}
+
+			vim.list_extend(groups, require("profile").extra("whichkey_groups"))
+
+			wk.add(groups)
 		end,
 	},
 }

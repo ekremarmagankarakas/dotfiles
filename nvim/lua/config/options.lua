@@ -38,3 +38,6 @@ vim.g.maplocalleader = "\\"
 
 -- Python
 vim.g.python_recommended_style = 0
+
+-- Profile overrides (machine-local tweaks live in profile_local.lua / lua/local/*.lua)
+require("profile").apply_options()

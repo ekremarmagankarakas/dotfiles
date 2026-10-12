@@ -13,6 +13,19 @@ vim.keymap.set("n", "<leader>t", function()
 	vim.cmd("belowright 15split | term")
 end, { silent = true, desc = "Open terminal" })
 
+-- Open Terminal in a new tab
+vim.keymap.set("n", "<leader>T", function()
+	vim.cmd("tabnew | term")
+end, { silent = true, desc = "Open terminal (new tab)" })
+
+-- Yank current file's directory to the system clipboard
+vim.keymap.set("n", "yd", function()
+	local dir = vim.fn.expand("%:p:h")
+	vim.fn.setreg('"', dir)
+	vim.fn.setreg("+", dir)
+	vim.notify("Yanked directory: " .. dir)
+end, { silent = true, desc = "Yank file directory" })
+
 -- Terminal: exit insert mode with Escape
 vim.keymap.set("t", "<Esc><Esc>", "<C-\\><C-n>", { silent = true, desc = "Terminal: exit insert mode" })
 

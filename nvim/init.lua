@@ -16,6 +16,10 @@ vim.opt.rtp:prepend(lazypath)
 
 require("config")
 
+vim.api.nvim_create_user_command("Profile", function()
+	vim.notify("Active profile: " .. require("profile").name(), vim.log.levels.INFO)
+end, { desc = "Show active nvim profile" })
+
 require("lazy").setup({
 	spec = {
 		{ import = "plugins" },

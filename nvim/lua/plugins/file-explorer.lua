@@ -4,6 +4,9 @@ return {
 	----------------------------------------------------------------------
 	{
 		"stevearc/oil.nvim",
+		cond = function()
+			return require("profile").plugin_enabled("oil.nvim")
+		end,
 		dependencies = { "nvim-tree/nvim-web-devicons" },
 		lazy = false,
 		keys = {
@@ -30,6 +33,9 @@ return {
 	----------------------------------------------------------------------
 	{
 		"refractalize/oil-git-status.nvim",
+		cond = function()
+			return require("profile").plugin_enabled("oil-git-status.nvim")
+		end,
 		dependencies = { "stevearc/oil.nvim" },
 		opts = {},
 	},

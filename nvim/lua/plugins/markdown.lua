@@ -1,6 +1,9 @@
 return {
 	{
 		"jakewvincent/mkdnflow.nvim",
+		cond = function()
+			return require("profile").plugin_enabled("mkdnflow.nvim")
+		end,
 		ft = { "markdown", "rmd" },
 		config = function()
 			require("mkdnflow").setup({

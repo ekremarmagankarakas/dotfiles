@@ -1,28 +1,41 @@
+-- Mason package name for each Mason-managed LSP server, so profile.lsp.servers
+-- toggles can filter the mason-tool-installer ensure_installed list too.
+-- r_language_server is installed via R itself, not Mason, so it has no entry.
+local SERVER_TOOLS = {
+	lua_ls = "lua-language-server",
+	pyright = "pyright",
+	ts_ls = "typescript-language-server",
+	zls = "zls",
+	ltex = "ltex-ls",
+	marksman = "marksman",
+	clangd = "clangd",
+	rust_analyzer = "rust-analyzer",
+	gopls = "gopls",
+	bashls = "bash-language-server",
+	intelephense = "intelephense",
+	sqls = "sqls",
+	cssls = "css-lsp",
+	html = "html-lsp",
+}
+
+local ALL_SERVERS = {
+	"lua_ls", "pyright", "ts_ls", "zls", "ltex", "marksman", "clangd",
+	"rust_analyzer", "gopls", "bashls", "intelephense", "sqls", "cssls", "html",
+}
+
 return {
 	"neovim/nvim-lspconfig",
 	version = "*",
+	cond = function()
+		return require("profile").plugin_enabled("nvim-lspconfig")
+	end,
 	dependencies = {
 		-- Mason
 		{ "mason-org/mason.nvim", opts = {} },
 		{
 			"WhoIsSethDaniel/mason-tool-installer.nvim",
-			opts = {
-				ensure_installed = {
-					-- LSP servers
-					"lua-language-server",
-					"pyright",
-					"typescript-language-server",
-					"zls",
-					"ltex-ls",
-					"marksman",
-					"clangd",
-					"rust-analyzer",
-					"gopls",
-					"bash-language-server",
-					"intelephense",
-					"sqls",
-					"css-lsp",
-					"html-lsp",
+			opts = function()
+				local ensure_installed = {
 					-- Formatters
 					"stylua",
 					"prettier",
@@ -40,8 +53,16 @@ return {
 					"delve",
 					"js-debug-adapter",
 					"codelldb",
-				},
-			},
+				}
+
+				for _, server in ipairs(ALL_SERVERS) do
+					if require("profile").lsp_server_enabled(server) then
+						table.insert(ensure_installed, SERVER_TOOLS[server])
+					end
+				end
+
+				return { ensure_installed = ensure_installed }
+			end,
 		},
 		-- Completion
 		{ "hrsh7th/nvim-cmp", event = { "InsertEnter", "CmdlineEnter" } },
@@ -71,11 +92,13 @@ return {
 				["<C-y>"] = cmp.mapping.confirm({ select = true }),
 				["<C-Space>"] = cmp.mapping.complete(),
 			}),
-			sources = cmp.config.sources({
-				{ name = "nvim_lsp" },
-				{ name = "luasnip" },
-				{ name = "path" },
-			}, { { name = "buffer" } }),
+			sources = cmp.config.sources(
+				vim.list_extend(
+					{ { name = "nvim_lsp" }, { name = "luasnip" }, { name = "path" } },
+					require("profile").extra("completion_sources")
+				),
+				{ { name = "buffer" } }
+			),
 		})
 
 		-- Cmdline completion for "/" and "?" (search)
@@ -112,19 +135,30 @@ return {
 		})
 
 		-- LSP keymaps
-		-- gd/gD are Neovim 0.11+ defaults; only gy (type definition) needs explicit mapping
+		-- Neovim 0.11+ ships default LSP keymaps (gra, grn, grr, gri, gO, K, ...);
+		-- these are kept explicit anyway so they show up in which-key / :Telescope keymaps
+		-- and so their behavior doesn't silently change across Neovim versions.
 		local lsp_keymaps = vim.api.nvim_create_augroup("UserLspKeymaps", { clear = true })
 		vim.api.nvim_create_autocmd("LspAttach", {
 			group = lsp_keymaps,
 			callback = function(ev)
 				local bufnr = ev.buf
-				local map = function(lhs, rhs, desc)
-					vim.keymap.set("n", lhs, rhs, { buffer = bufnr, silent = true, desc = desc })
+				local map = function(mode, lhs, rhs, desc)
+					vim.keymap.set(mode, lhs, rhs, { buffer = bufnr, silent = true, desc = desc })
 				end
 
-				map("gd", vim.lsp.buf.definition, "LSP: goto definition")
-				map("gD", vim.lsp.buf.declaration, "LSP: goto declaration")
-				map("gy", vim.lsp.buf.type_definition, "LSP: goto type definition")
+				-- gd/gD/gy go to definition/declaration/type definition.
+				-- grn/gra/grr/gri/gO (rename/code action/references/implementation/symbols)
+				-- and K (hover) are Neovim 0.11+ LSP defaults; <leader>l* mirrors the common
+				-- ones under the lsp which-key group, and signature help has no default.
+				map("n", "gd", vim.lsp.buf.definition, "LSP: goto definition")
+				map("n", "gD", vim.lsp.buf.declaration, "LSP: goto declaration")
+				map("n", "gy", vim.lsp.buf.type_definition, "LSP: goto type definition")
+				map("n", "K", vim.lsp.buf.hover, "LSP: hover")
+				map("n", "<leader>lr", vim.lsp.buf.rename, "LSP: rename")
+				map("n", "<leader>la", vim.lsp.buf.code_action, "LSP: code action")
+				-- <C-k> is taken globally by LuaSnip jump-back, so signature help lives on <C-s>
+				map("i", "<C-s>", vim.lsp.buf.signature_help, "LSP: signature help")
 			end,
 		})
 
@@ -342,23 +376,14 @@ return {
 			root_markers = { "package.json", ".git" },
 		})
 
-		-- Enable all Mason-managed servers
-		vim.lsp.enable({
-			"lua_ls",
-			"pyright",
-			"ts_ls",
-			"zls",
-			"ltex",
-			"marksman",
-			"clangd",
-			"rust_analyzer",
-			"gopls",
-			"bashls",
-			"intelephense",
-			"sqls",
-			"cssls",
-			"html",
-		})
+		-- Enable Mason-managed servers that are on for the active profile
+		local enabled_servers = {}
+		for _, server in ipairs(ALL_SERVERS) do
+			if require("profile").lsp_server_enabled(server) then
+				table.insert(enabled_servers, server)
+			end
+		end
+		vim.lsp.enable(enabled_servers)
 
 		-- R (installed via R, not Mason)
 		-- Use autocmd to explicitly start server since it's not managed by Mason
@@ -368,6 +393,10 @@ return {
 			group = r_lsp_group,
 			pattern = { "r" },
 			callback = function()
+				if not require("profile").lsp_server_enabled("r_language_server") then
+					return
+				end
+
 				-- Find git root or use cwd
 				local root_dir = vim.fn.getcwd()
 				local git = vim.fs.find(".git", { upward = true })[1]

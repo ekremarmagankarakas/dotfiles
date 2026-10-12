@@ -1,5 +1,8 @@
 return {
 	"L3MON4D3/LuaSnip",
+	cond = function()
+		return require("profile").plugin_enabled("LuaSnip")
+	end,
 	version = "v2.*",
 	build = "make install_jsregexp",
 	dependencies = {

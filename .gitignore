@@ -9,6 +9,10 @@ tmux/plugins/
 **/lazy-lock.json
 **/.luarc.json
 
+# Neovim machine-local profile overrides
+nvim/lua/profile_local.lua
+nvim/lua/local/
+
 # Backup files
 *.bak
 **/*.bak

@@ -4,6 +4,9 @@ return {
 	----------------------------------------------------------------------
 	{
 		"folke/flash.nvim",
+		cond = function()
+			return require("profile").plugin_enabled("flash.nvim")
+		end,
 		event = "VeryLazy",
 		keys = {
 			{
@@ -62,6 +65,9 @@ return {
 	----------------------------------------------------------------------
 	{
 		"ThePrimeagen/harpoon",
+		cond = function()
+			return require("profile").plugin_enabled("harpoon")
+		end,
 		branch = "harpoon2",
 		dependencies = { "nvim-lua/plenary.nvim" },
 		keys = {
@@ -140,6 +146,9 @@ return {
 	----------------------------------------------------------------------
 	{
 		"windwp/nvim-autopairs",
+		cond = function()
+			return require("profile").plugin_enabled("nvim-autopairs")
+		end,
 		event = "InsertEnter",
 		config = function()
 			require("nvim-autopairs").setup()
@@ -160,6 +169,9 @@ return {
 	----------------------------------------------------------------------
     {
         "tpope/vim-sleuth",
+        cond = function()
+            return require("profile").plugin_enabled("vim-sleuth")
+        end,
         event = { "BufReadPost", "BufNewFile" },
     },
 }

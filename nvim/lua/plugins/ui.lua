@@ -2,9 +2,32 @@ return {
 	----------------------------------------------------------------------
 	-- Install Themes
 	----------------------------------------------------------------------
-	{ "catppuccin/nvim", name = "catppuccin", lazy = true, priority = 1000 },
-	{ "projekt0n/github-nvim-theme", name = "github-theme", lazy = true, priority = 1000 },
-	{ "Mofiqul/vscode.nvim", lazy = true, priority = 1000 },
+	{
+		"catppuccin/nvim",
+		name = "catppuccin",
+		lazy = true,
+		priority = 1000,
+		cond = function()
+			return require("profile").plugin_enabled("catppuccin")
+		end,
+	},
+	{
+		"projekt0n/github-nvim-theme",
+		name = "github-theme",
+		lazy = true,
+		priority = 1000,
+		cond = function()
+			return require("profile").plugin_enabled("github-theme")
+		end,
+	},
+	{
+		"Mofiqul/vscode.nvim",
+		lazy = true,
+		priority = 1000,
+		cond = function()
+			return require("profile").plugin_enabled("vscode.nvim")
+		end,
+	},
 	-- { "Mofiqul/dracula.nvim", lazy = true, priority = 1000 },
 	-- { "folke/tokyonight.nvim", lazy = true, priority = 1000 },
 	-- { "Mofiqul/adwaita.nvim", lazy = true, priority = 1000 },
@@ -15,6 +38,9 @@ return {
 	----------------------------------------------------------------------
 	{
 		"lukas-reineke/indent-blankline.nvim",
+		cond = function()
+			return require("profile").plugin_enabled("indent-blankline.nvim")
+		end,
 		main = "ibl",
 		opts = {
 			scope = {
@@ -30,6 +56,9 @@ return {
 	----------------------------------------------------------------------
 	{
 		"nvim-lualine/lualine.nvim",
+		cond = function()
+			return require("profile").plugin_enabled("lualine.nvim")
+		end,
 		dependencies = { "nvim-tree/nvim-web-devicons" },
 		opts = {
 			options = {

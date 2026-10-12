@@ -3,76 +3,116 @@
 ----------------------------------------------------------------------
 return {
 	"nvim-treesitter/nvim-treesitter",
+	-- Pin to "master" (the legacy configs-style API this file is written
+	-- against). The config function below still detects and falls back to
+	-- the "main" branch's slimmed-down API if that's what's installed.
+	branch = "master",
 	build = ":TSUpdate",
+	cond = function()
+		return require("profile").plugin_enabled("nvim-treesitter")
+	end,
 	dependencies = {
 		"nvim-treesitter/nvim-treesitter-textobjects",
 		"windwp/nvim-ts-autotag",
+		{ "nvim-treesitter/nvim-treesitter-context", opts = { max_lines = 3 } },
 	},
 	config = function()
-		require("nvim-treesitter").setup({
-			-- A list of parser names, or "all"
-			ensure_installed = {
-				"vimdoc",
-				"javascript",
-				"typescript",
-				"c",
-				"cpp",
-				"lua",
-				"rust",
-				"go",
-				"gomod",
-				"gosum",
-				"jsdoc",
-				"bash",
-				"latex",
-				"bibtex",
-				"r",
-				"markdown",
-				"markdown_inline",
-				"zig",
-				"python",
-				"php",
-				"sql",
-				"css",
-				"html",
-			},
+		-- YANG has no maintained treesitter grammar; register the filetype
+		-- anyway so LSP/formatter/other filetype-keyed tooling can target it.
+		vim.filetype.add({ extension = { yang = "yang" } })
 
-			-- Install parsers synchronously (only applied to `ensure_installed`)
-			sync_install = false,
+		local parsers = {
+			"vimdoc",
+			"javascript",
+			"typescript",
+			"c",
+			"cpp",
+			"lua",
+			"rust",
+			"go",
+			"gomod",
+			"gosum",
+			"jsdoc",
+			"bash",
+			"latex",
+			"bibtex",
+			"r",
+			"markdown",
+			"markdown_inline",
+			"zig",
+			"python",
+			"php",
+			"sql",
+			"css",
+			"html",
+		}
 
-			-- Automatically install missing parsers when entering buffer
-			-- Recommendation: set to false if you don"t have `tree-sitter` CLI installed locally
-			auto_install = true,
+		local max_filesize = 100 * 1024
+		local function is_large(buf)
+			local ok, stats = pcall(vim.uv.fs_stat, vim.api.nvim_buf_get_name(buf))
+			if ok and stats and stats.size > max_filesize then
+				vim.notify(
+					"File larger than 100KB, treesitter disabled for performance",
+					vim.log.levels.WARN,
+					{ title = "Treesitter" }
+				)
+				return true
+			end
+			return false
+		end
 
-			indent = {
-				enable = true,
-			},
+		local ts = require("nvim-treesitter")
 
-			highlight = {
-				enable = true,
-				disable = function(lang, buf)
-					if lang == "markdown" or lang == "markdown_inline" then
-						return true
+		if ts.setup then
+			----------------------------------------------------------------------
+			-- "master" branch: legacy configs-style API
+			----------------------------------------------------------------------
+			ts.setup({
+				ensure_installed = parsers,
+				sync_install = false,
+				auto_install = true,
+				indent = { enable = true },
+				highlight = {
+					enable = true,
+					disable = function(lang, buf)
+						if lang == "markdown" or lang == "markdown_inline" then
+							return true
+						end
+						return is_large(buf)
+					end,
+					additional_vim_regex_highlighting = { "markdown" },
+				},
+			})
+		else
+			----------------------------------------------------------------------
+			-- "main" branch: new slim API, no configs/highlight/indent modules
+			----------------------------------------------------------------------
+			ts.install(parsers)
+
+			vim.api.nvim_create_autocmd("FileType", {
+				callback = function(args)
+					local buf = args.buf
+					local ft = vim.bo[buf].filetype
+					local lang = vim.treesitter.language.get_lang(ft) or ft
+
+					if lang == "markdown" or lang == "markdown_inline" or is_large(buf) then
+						return
 					end
-					local max_filesize = 100 * 1024
-					local ok, stats = pcall(vim.uv.fs_stat, vim.api.nvim_buf_get_name(buf))
-					if ok and stats and stats.size > max_filesize then
-						vim.notify(
-							"File larger than 100KB treesitter disabled for performance",
-							vim.log.levels.WARN,
-							{ title = "Treesitter" }
-						)
-						return true
+
+					if not (ts.get_installed and vim.tbl_contains(ts.get_installed(), lang)) then
+						pcall(ts.install, { lang })
 					end
+
+					pcall(vim.treesitter.start, buf, lang)
 				end,
-				additional_vim_regex_highlighting = { "markdown" },
-			},
-		})
+			})
+		end
 
 		-- Auto-close and auto-rename HTML/JSX tags
 		require("nvim-ts-autotag").setup()
 
-		-- Set up textobjects keymaps manually (required for newer nvim-treesitter)
+		-- Set up textobjects keymaps manually (required for newer nvim-treesitter,
+		-- and identical on both the "main" and "master" branches)
 		local ts_select = require("nvim-treesitter-textobjects.select")
 		local ts_move = require("nvim-treesitter-textobjects.move")
 

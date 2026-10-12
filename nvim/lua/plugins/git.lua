@@ -4,6 +4,9 @@ return {
 	----------------------------------------------------------------------
 	{
 		"lewis6991/gitsigns.nvim",
+		cond = function()
+			return require("profile").plugin_enabled("gitsigns.nvim")
+		end,
 		main = "gitsigns",
 		event = "BufReadPre",
 		keys = {
@@ -11,7 +14,7 @@ return {
 			{
 				"<leader>gp",
 				function()
-					require("gitsigns").preview_hunk()
+					require("config.vcs").current().hunk.preview()
 				end,
 				silent = true,
 				desc = "Git: preview hunk",
@@ -19,7 +22,7 @@ return {
 			{
 				"<leader>gP",
 				function()
-					require("gitsigns").preview_hunk_inline()
+					require("config.vcs").current().hunk.preview_inline()
 				end,
 				silent = true,
 				desc = "Git: preview hunk inline",
@@ -29,7 +32,7 @@ return {
 			{
 				"]g",
 				function()
-					require("gitsigns").nav_hunk("next")
+					require("config.vcs").current().hunk.next()
 				end,
 				silent = true,
 				desc = "Git: next hunk",
@@ -37,7 +40,7 @@ return {
 			{
 				"[g",
 				function()
-					require("gitsigns").nav_hunk("prev")
+					require("config.vcs").current().hunk.prev()
 				end,
 				silent = true,
 				desc = "Git: prev hunk",
@@ -47,7 +50,7 @@ return {
 			{
 				"<leader>gs",
 				function()
-					require("gitsigns").stage_hunk()
+					require("config.vcs").current().hunk.stage()
 				end,
 				silent = true,
 				desc = "Git: stage hunk",
@@ -55,7 +58,7 @@ return {
 			{
 				"<leader>gs",
 				function()
-					require("gitsigns").stage_hunk({ vim.fn.line("."), vim.fn.line("v") })
+					require("config.vcs").current().hunk.stage({ vim.fn.line("."), vim.fn.line("v") })
 				end,
 				mode = "v",
 				silent = true,
@@ -64,7 +67,7 @@ return {
 			{
 				"<leader>gr",
 				function()
-					require("gitsigns").reset_hunk()
+					require("config.vcs").current().hunk.reset()
 				end,
 				silent = true,
 				desc = "Git: reset hunk",
@@ -72,7 +75,7 @@ return {
 			{
 				"<leader>gr",
 				function()
-					require("gitsigns").reset_hunk({ vim.fn.line("."), vim.fn.line("v") })
+					require("config.vcs").current().hunk.reset({ vim.fn.line("."), vim.fn.line("v") })
 				end,
 				mode = "v",
 				silent = true,
@@ -81,7 +84,7 @@ return {
 			{
 				"<leader>gS",
 				function()
-					require("gitsigns").stage_buffer()
+					require("config.vcs").current().hunk.stage_buffer()
 				end,
 				silent = true,
 				desc = "Git: stage buffer",
@@ -89,7 +92,7 @@ return {
 			{
 				"<leader>gR",
 				function()
-					require("gitsigns").reset_buffer()
+					require("config.vcs").current().hunk.reset_buffer()
 				end,
 				silent = true,
 				desc = "Git: reset buffer",
@@ -97,35 +100,48 @@ return {
 			{
 				"<leader>gu",
 				function()
-					require("gitsigns").undo_stage_hunk()
+					require("config.vcs").current().hunk.undo_stage()
 				end,
 				silent = true,
 				desc = "Git: undo stage hunk",
 			},
 
-			-- Toggles
+			-- Blame
 			{
 				"<leader>gb",
 				function()
-					require("gitsigns").toggle_current_line_blame()
+					require("config.vcs").current().blame.toggle_line()
 				end,
 				silent = true,
-				desc = "Git: toggle blame",
+				desc = "Git: toggle line blame",
 			},
+			{
+				"<leader>gB",
+				function()
+					require("config.vcs").current().blame.buffer()
+				end,
+				silent = true,
+				desc = "Git: full buffer blame",
+			},
+
+			-- Toggles
 			{
 				"<leader>gT",
 				function()
-					require("gitsigns").toggle_signs()
+					require("config.vcs").current().hunk.toggle_signs()
 				end,
 				silent = true,
 				desc = "Git: toggle signs",
 			},
 		},
 		opts = {
+			current_line_blame_opts = {
+				use_focus = false,
+			},
+			current_line_blame_formatter = "  <abbrev_sha> · <author> · <author_time:%Y-%m-%d>",
 			on_attach = function(bufnr)
-				local gs = require("gitsigns")
 				vim.keymap.set({ "o", "x" }, "ih", function()
-					gs.select_hunk()
+					require("config.vcs").current().hunk.select()
 				end, { buffer = bufnr, desc = "Git: select hunk" })
 			end,
 		},
@@ -136,6 +152,9 @@ return {
 	----------------------------------------------------------------------
 	{
 		"sindrets/diffview.nvim",
+		cond = function()
+			return require("profile").plugin_enabled("diffview.nvim")
+		end,
 		dependencies = { "nvim-tree/nvim-web-devicons" },
 		cmd = {
 			"DiffviewOpen",
@@ -146,11 +165,41 @@ return {
 			"DiffviewFileHistory",
 		},
 		keys = {
-			{ "<leader>gdo", "<cmd>DiffviewOpen<cr>", desc = "Open Diffview" },
-			{ "<leader>gdc", "<cmd>DiffviewClose<cr>", desc = "Close Diffview" },
-			{ "<leader>gdh", "<cmd>DiffviewFileHistory<cr>", desc = "File History (all)" },
-			{ "<leader>gdf", "<cmd>DiffviewFileHistory %<cr>", desc = "File History (current)" },
-			{ "<leader>gdt", "<cmd>DiffviewToggleFiles<cr>", desc = "Toggle File Panel" },
+			{
+				"<leader>gdo",
+				function()
+					require("config.vcs").current().diff.open()
+				end,
+				desc = "Open Diffview",
+			},
+			{
+				"<leader>gdc",
+				function()
+					require("config.vcs").current().diff.close()
+				end,
+				desc = "Close Diffview",
+			},
+			{
+				"<leader>gdh",
+				function()
+					require("config.vcs").current().diff.history_all()
+				end,
+				desc = "File History (all)",
+			},
+			{
+				"<leader>gdf",
+				function()
+					require("config.vcs").current().diff.history_file()
+				end,
+				desc = "File History (current)",
+			},
+			{
+				"<leader>gdt",
+				function()
+					require("config.vcs").current().diff.toggle_files()
+				end,
+				desc = "Toggle File Panel",
+			},
 		},
 		opts = {
 			hooks = {
