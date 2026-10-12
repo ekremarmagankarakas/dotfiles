@@ -55,27 +55,9 @@ return {
 			{ "<leader>f/", "<cmd>Telescope search_history<cr>", desc = "Find: search history" },
 			{ "<leader>fq", "<cmd>Telescope quickfix<cr>", desc = "Find: quickfix" },
 			{ "<leader>fl", "<cmd>Telescope loclist<cr>", desc = "Find: loclist" },
-			{
-				"<leader>gtc",
-				function()
-					require("config.vcs").get_active_provider().pickers.commits()
-				end,
-				desc = "VCS: commits (Telescope)",
-			},
-			{
-				"<leader>gts",
-				function()
-					require("config.vcs").get_active_provider().pickers.status()
-				end,
-				desc = "VCS: status (Telescope)",
-			},
-			{
-				"<leader>gtB",
-				function()
-					require("config.vcs").get_active_provider().pickers.branches()
-				end,
-				desc = "VCS: branches (Telescope)",
-			},
+			-- <leader>gtc/gts/gtB (VCS pickers) live in lua/config/vcs_keymaps.lua,
+			-- not here -- they need to exist independent of whether telescope.nvim
+			-- is enabled.
 			{
 				"<leader>fa",
 				function()

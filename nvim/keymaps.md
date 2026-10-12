@@ -196,9 +196,9 @@ Leader: `Space` | Local leader: `\`
 | `<leader>fq` | n | Quickfix list |
 | `<leader>fl` | n | Location list |
 | `<leader>fa` | n | Find files in configured base directories (`profile.search_dirs`) |
-| `<leader>gtc` | n | VCS: commits |
-| `<leader>gts` | n | VCS: status |
-| `<leader>gtB` | n | VCS: branches |
+
+(`<leader>gtc`/`gts`/`gtB` dispatch to Telescope's git pickers but are bound
+in `lua/config/vcs_keymaps.lua`, not here -- see Git / VCS below.)
 
 ### Flash (`lua/plugins/tools.lua`)
 
@@ -224,7 +224,7 @@ Leader: `Space` | Local leader: `\`
 | `][` `[]` | n/x/o | Next / previous class end |
 | `]a` `[a` | n/x/o | Next / previous argument |
 
-### Git / VCS (`lua/plugins/git.lua`, `lua/config/vcs.lua`)
+### Git / VCS (`lua/config/vcs_keymaps.lua`, `lua/config/vcs.lua`)
 
 Hunk, diff, and blame operations are routed through `config.vcs` (see
 `lua/config/vcs.lua`). Git is the always-available static fallback. Add
@@ -238,6 +238,18 @@ no static "selected backend" setting. Any hunk/diff/blame/pickers action a
 provider doesn't implement (e.g. a VCS with no staging area) is auto-filled
 with a no-op that notifies "not supported", so providers only need to define
 what they actually support.
+
+The keymaps below are bound unconditionally from `lua/config/vcs_keymaps.lua`,
+independent of whether `gitsigns.nvim`/`diffview.nvim`/`telescope.nvim` are
+enabled via profile -- so a custom provider gets full keymap coverage even if
+those specific UI plugins are turned off. If the active provider's backing
+plugin isn't loaded (e.g. you disabled `gitsigns.nvim` and no other provider
+claimed the buffer), the keymap notifies "not loaded" instead of erroring.
+`gitsigns.nvim`/`diffview.nvim`/`telescope.nvim`'s own specs (in
+`lua/plugins/git.lua`/`telescope.lua`) now only hold their own display/behavior
+config -- Diffview's conflict-resolution keymaps (`<leader>dco`/`dct`/`dcb`/
+`dca`, `dx`) stay there since they're view-local, not part of this
+abstraction.
 
 | Key | Mode | Description |
 |-----|------|-------------|

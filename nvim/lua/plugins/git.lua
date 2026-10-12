@@ -1,6 +1,11 @@
 return {
 	----------------------------------------------------------------------
 	-- Git Signs
+	--
+	-- Keymaps that dispatch through config.vcs (hunk nav/stage/blame, ih
+	-- textobject) live in lua/config/vcs_keymaps.lua, not here -- they need
+	-- to exist independent of whether this plugin is enabled. Only this
+	-- plugin's own display/behavior config stays in this spec.
 	----------------------------------------------------------------------
 	{
 		"lewis6991/gitsigns.nvim",
@@ -9,154 +14,21 @@ return {
 		end,
 		main = "gitsigns",
 		event = "BufReadPre",
-		keys = {
-			-- Preview
-			{
-				"<leader>gp",
-				function()
-					require("config.vcs").get_active_provider().hunk.preview()
-				end,
-				silent = true,
-				desc = "Git: preview hunk",
-			},
-			{
-				"<leader>gP",
-				function()
-					require("config.vcs").get_active_provider().hunk.preview_inline()
-				end,
-				silent = true,
-				desc = "Git: preview hunk inline",
-			},
-
-			-- Hunk navigation
-			{
-				"]g",
-				function()
-					require("config.vcs").get_active_provider().hunk.next()
-				end,
-				silent = true,
-				desc = "Git: next hunk",
-			},
-			{
-				"[g",
-				function()
-					require("config.vcs").get_active_provider().hunk.prev()
-				end,
-				silent = true,
-				desc = "Git: prev hunk",
-			},
-
-			-- Stage / Reset (normal + visual)
-			{
-				"<leader>gs",
-				function()
-					require("config.vcs").get_active_provider().hunk.stage()
-				end,
-				silent = true,
-				desc = "Git: stage hunk",
-			},
-			{
-				"<leader>gs",
-				function()
-					require("config.vcs").get_active_provider().hunk.stage({ vim.fn.line("."), vim.fn.line("v") })
-				end,
-				mode = "v",
-				silent = true,
-				desc = "Git: stage hunk (visual)",
-			},
-			{
-				"<leader>gr",
-				function()
-					require("config.vcs").get_active_provider().hunk.reset()
-				end,
-				silent = true,
-				desc = "Git: reset hunk",
-			},
-			{
-				"<leader>gr",
-				function()
-					require("config.vcs").get_active_provider().hunk.reset({ vim.fn.line("."), vim.fn.line("v") })
-				end,
-				mode = "v",
-				silent = true,
-				desc = "Git: reset hunk (visual)",
-			},
-			{
-				"<leader>gS",
-				function()
-					require("config.vcs").get_active_provider().hunk.stage_buffer()
-				end,
-				silent = true,
-				desc = "Git: stage buffer",
-			},
-			{
-				"<leader>gR",
-				function()
-					require("config.vcs").get_active_provider().hunk.reset_buffer()
-				end,
-				silent = true,
-				desc = "Git: reset buffer",
-			},
-			{
-				"<leader>gu",
-				function()
-					require("config.vcs").get_active_provider().hunk.undo_stage()
-				end,
-				silent = true,
-				desc = "Git: undo stage hunk",
-			},
-
-			-- Blame
-			{
-				"<leader>gb",
-				function()
-					require("config.vcs").get_active_provider().blame.line_full()
-				end,
-				silent = true,
-				desc = "Git: full commit description for line",
-			},
-			{
-				"<leader>gB",
-				function()
-					require("config.vcs").get_active_provider().blame.buffer()
-				end,
-				silent = true,
-				desc = "Git: full buffer blame",
-			},
-			{
-				"<leader>gtb",
-				function()
-					require("config.vcs").get_active_provider().blame.toggle_line()
-				end,
-				silent = true,
-				desc = "Git: toggle inline line blame",
-			},
-
-			-- Toggles
-			{
-				"<leader>gT",
-				function()
-					require("config.vcs").get_active_provider().hunk.toggle_signs()
-				end,
-				silent = true,
-				desc = "Git: toggle signs",
-			},
-		},
 		opts = {
 			current_line_blame_opts = {
 				use_focus = false,
 			},
 			current_line_blame_formatter = "  <abbrev_sha> · <author> · <author_time:%Y-%m-%d> · <summary>",
-			on_attach = function(bufnr)
-				vim.keymap.set({ "o", "x" }, "ih", function()
-					require("config.vcs").get_active_provider().hunk.select()
-				end, { buffer = bufnr, desc = "Git: select hunk" })
-			end,
 		},
 	},
 
 	----------------------------------------------------------------------
 	-- DiffView
+	--
+	-- Keymaps that dispatch through config.vcs (open/close/history/toggle)
+	-- live in lua/config/vcs_keymaps.lua. The conflict-resolution keymaps
+	-- below stay here since they're Diffview-view-local, not part of the
+	-- VCS abstraction.
 	----------------------------------------------------------------------
 	{
 		"sindrets/diffview.nvim",
@@ -171,43 +43,6 @@ return {
 			"DiffviewFocusFiles",
 			"DiffviewRefresh",
 			"DiffviewFileHistory",
-		},
-		keys = {
-			{
-				"<leader>gdo",
-				function()
-					require("config.vcs").get_active_provider().diff.open()
-				end,
-				desc = "Open Diffview",
-			},
-			{
-				"<leader>gdc",
-				function()
-					require("config.vcs").get_active_provider().diff.close()
-				end,
-				desc = "Close Diffview",
-			},
-			{
-				"<leader>gdh",
-				function()
-					require("config.vcs").get_active_provider().diff.history_all()
-				end,
-				desc = "File History (all)",
-			},
-			{
-				"<leader>gdf",
-				function()
-					require("config.vcs").get_active_provider().diff.history_file()
-				end,
-				desc = "File History (current)",
-			},
-			{
-				"<leader>gdt",
-				function()
-					require("config.vcs").get_active_provider().diff.toggle_files()
-				end,
-				desc = "Toggle File Panel",
-			},
 		},
 		opts = {
 			hooks = {

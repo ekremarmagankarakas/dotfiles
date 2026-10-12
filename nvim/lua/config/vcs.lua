@@ -10,6 +10,11 @@
 -- and falls back to the git provider -- it never consults a static config
 -- value, so multiple providers can coexist and the right one is picked per
 -- buffer.
+--
+-- The keymaps that call into this (lua/config/vcs_keymaps.lua) are always
+-- loaded, independent of whether gitsigns.nvim/diffview.nvim/telescope.nvim
+-- are enabled -- so the git provider's own functions below guard every call
+-- into those plugins and notify instead of erroring if one isn't loaded.
 ----------------------------------------------------------------------
 
 local M = {}
@@ -21,90 +26,130 @@ local custom_providers = {}
 local SCHEMA_GROUPS = { "hunk", "diff", "blame", "pickers" }
 
 ----------------------------------------------------------------------
+-- Guards: call into an optional module/command without erroring if it
+-- isn't loaded (e.g. its owning plugin is disabled via profile).
+----------------------------------------------------------------------
+
+-- Wrap fn(mod, ...) so it only runs if `mod_name` is require-able, else
+-- notifies instead of raising.
+local function with_module(mod_name, fn)
+	return function(...)
+		local ok, mod = pcall(require, mod_name)
+		if not ok then
+			vim.notify(
+				string.format("git: %s is not loaded (plugin disabled?)", mod_name),
+				vim.log.levels.WARN
+			)
+			return
+		end
+		return fn(mod, ...)
+	end
+end
+
+-- Same idea for a plain ex-command (Diffview isn't a Lua API we require()).
+-- `vim.fn.exists(":Cmd")` is true for lazy.nvim's placeholder too, so this
+-- still lets the plugin lazy-load on first use -- it only fails closed when
+-- the plugin was never going to load at all (disabled via profile).
+local function with_command(build_cmd)
+	return function(...)
+		local cmd = build_cmd(...)
+		local name = cmd:match("^%S+")
+		if vim.fn.exists(":" .. name) ~= 2 then
+			vim.notify(
+				string.format("git: %s is not available (diffview.nvim disabled?)", name),
+				vim.log.levels.WARN
+			)
+			return
+		end
+		vim.cmd(cmd)
+	end
+end
+
+----------------------------------------------------------------------
 -- Built-in Git provider (the fallback; always available, no is_active check)
 ----------------------------------------------------------------------
 local git_provider = {
 	name = "git",
 
 	hunk = {
-		preview = function()
-			require("gitsigns").preview_hunk()
-		end,
-		preview_inline = function()
-			require("gitsigns").preview_hunk_inline()
-		end,
-		next = function()
-			require("gitsigns").nav_hunk("next")
-		end,
-		prev = function()
-			require("gitsigns").nav_hunk("prev")
-		end,
-		stage = function(range)
-			require("gitsigns").stage_hunk(range)
-		end,
-		reset = function(range)
-			require("gitsigns").reset_hunk(range)
-		end,
-		stage_buffer = function()
-			require("gitsigns").stage_buffer()
-		end,
-		reset_buffer = function()
-			require("gitsigns").reset_buffer()
-		end,
-		undo_stage = function()
-			require("gitsigns").undo_stage_hunk()
-		end,
-		select = function()
-			require("gitsigns").select_hunk()
-		end,
-		toggle_signs = function()
-			require("gitsigns").toggle_signs()
-		end,
+		preview = with_module("gitsigns", function(gs)
+			gs.preview_hunk()
+		end),
+		preview_inline = with_module("gitsigns", function(gs)
+			gs.preview_hunk_inline()
+		end),
+		next = with_module("gitsigns", function(gs)
+			gs.nav_hunk("next")
+		end),
+		prev = with_module("gitsigns", function(gs)
+			gs.nav_hunk("prev")
+		end),
+		stage = with_module("gitsigns", function(gs, range)
+			gs.stage_hunk(range)
+		end),
+		reset = with_module("gitsigns", function(gs, range)
+			gs.reset_hunk(range)
+		end),
+		stage_buffer = with_module("gitsigns", function(gs)
+			gs.stage_buffer()
+		end),
+		reset_buffer = with_module("gitsigns", function(gs)
+			gs.reset_buffer()
+		end),
+		undo_stage = with_module("gitsigns", function(gs)
+			gs.undo_stage_hunk()
+		end),
+		select = with_module("gitsigns", function(gs)
+			gs.select_hunk()
+		end),
+		toggle_signs = with_module("gitsigns", function(gs)
+			gs.toggle_signs()
+		end),
 	},
 
 	diff = {
-		open = function()
-			vim.cmd("DiffviewOpen")
-		end,
-		close = function()
-			vim.cmd("DiffviewClose")
-		end,
-		toggle_files = function()
-			vim.cmd("DiffviewToggleFiles")
-		end,
-		history_all = function()
-			vim.cmd("DiffviewFileHistory")
-		end,
-		history_file = function()
-			vim.cmd("DiffviewFileHistory %")
-		end,
+		open = with_command(function()
+			return "DiffviewOpen"
+		end),
+		close = with_command(function()
+			return "DiffviewClose"
+		end),
+		toggle_files = with_command(function()
+			return "DiffviewToggleFiles"
+		end),
+		history_all = with_command(function()
+			return "DiffviewFileHistory"
+		end),
+		history_file = with_command(function()
+			return "DiffviewFileHistory %"
+		end),
 	},
 
 	blame = {
 		-- Full commit/CL description popup for the current line (<leader>gb)
-		line_full = function()
-			require("gitsigns").blame_line({ full = true })
-		end,
+		line_full = with_module("gitsigns", function(gs)
+			gs.blame_line({ full = true })
+		end),
 		-- Inline per-line blame toggle (<leader>gtb)
-		toggle_line = function()
-			require("gitsigns").toggle_current_line_blame()
-		end,
+		toggle_line = with_module("gitsigns", function(gs)
+			gs.toggle_current_line_blame()
+		end),
 		-- Full-buffer blame view (<leader>gB)
-		buffer = function()
-			require("gitsigns").blame()
-		end,
+		buffer = with_module("gitsigns", function(gs)
+			gs.blame()
+		end),
 	},
 
 	pickers = {
-		commits = function()
-			require("telescope.builtin").git_commits()
-		end,
-		status = function()
-			require("telescope.builtin").git_status()
-		end,
-		branches = function()
-			require("telescope.builtin").git_branches()
-		end,
+		commits = with_module("telescope.builtin", function(tb)
+			tb.git_commits()
+		end),
+		status = with_module("telescope.builtin", function(tb)
+			tb.git_status()
+		end),
+		branches = with_module("telescope.builtin", function(tb)
+			tb.git_branches()
+		end),
 	},
 }
 
