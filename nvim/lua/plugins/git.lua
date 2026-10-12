@@ -14,7 +14,7 @@ return {
 			{
 				"<leader>gp",
 				function()
-					require("config.vcs").current().hunk.preview()
+					require("config.vcs").get_active_provider().hunk.preview()
 				end,
 				silent = true,
 				desc = "Git: preview hunk",
@@ -22,7 +22,7 @@ return {
 			{
 				"<leader>gP",
 				function()
-					require("config.vcs").current().hunk.preview_inline()
+					require("config.vcs").get_active_provider().hunk.preview_inline()
 				end,
 				silent = true,
 				desc = "Git: preview hunk inline",
@@ -32,7 +32,7 @@ return {
 			{
 				"]g",
 				function()
-					require("config.vcs").current().hunk.next()
+					require("config.vcs").get_active_provider().hunk.next()
 				end,
 				silent = true,
 				desc = "Git: next hunk",
@@ -40,7 +40,7 @@ return {
 			{
 				"[g",
 				function()
-					require("config.vcs").current().hunk.prev()
+					require("config.vcs").get_active_provider().hunk.prev()
 				end,
 				silent = true,
 				desc = "Git: prev hunk",
@@ -50,7 +50,7 @@ return {
 			{
 				"<leader>gs",
 				function()
-					require("config.vcs").current().hunk.stage()
+					require("config.vcs").get_active_provider().hunk.stage()
 				end,
 				silent = true,
 				desc = "Git: stage hunk",
@@ -58,7 +58,7 @@ return {
 			{
 				"<leader>gs",
 				function()
-					require("config.vcs").current().hunk.stage({ vim.fn.line("."), vim.fn.line("v") })
+					require("config.vcs").get_active_provider().hunk.stage({ vim.fn.line("."), vim.fn.line("v") })
 				end,
 				mode = "v",
 				silent = true,
@@ -67,7 +67,7 @@ return {
 			{
 				"<leader>gr",
 				function()
-					require("config.vcs").current().hunk.reset()
+					require("config.vcs").get_active_provider().hunk.reset()
 				end,
 				silent = true,
 				desc = "Git: reset hunk",
@@ -75,7 +75,7 @@ return {
 			{
 				"<leader>gr",
 				function()
-					require("config.vcs").current().hunk.reset({ vim.fn.line("."), vim.fn.line("v") })
+					require("config.vcs").get_active_provider().hunk.reset({ vim.fn.line("."), vim.fn.line("v") })
 				end,
 				mode = "v",
 				silent = true,
@@ -84,7 +84,7 @@ return {
 			{
 				"<leader>gS",
 				function()
-					require("config.vcs").current().hunk.stage_buffer()
+					require("config.vcs").get_active_provider().hunk.stage_buffer()
 				end,
 				silent = true,
 				desc = "Git: stage buffer",
@@ -92,7 +92,7 @@ return {
 			{
 				"<leader>gR",
 				function()
-					require("config.vcs").current().hunk.reset_buffer()
+					require("config.vcs").get_active_provider().hunk.reset_buffer()
 				end,
 				silent = true,
 				desc = "Git: reset buffer",
@@ -100,7 +100,7 @@ return {
 			{
 				"<leader>gu",
 				function()
-					require("config.vcs").current().hunk.undo_stage()
+					require("config.vcs").get_active_provider().hunk.undo_stage()
 				end,
 				silent = true,
 				desc = "Git: undo stage hunk",
@@ -110,25 +110,33 @@ return {
 			{
 				"<leader>gb",
 				function()
-					require("config.vcs").current().blame.toggle_line()
+					require("config.vcs").get_active_provider().blame.line_full()
 				end,
 				silent = true,
-				desc = "Git: toggle line blame",
+				desc = "Git: full commit description for line",
 			},
 			{
 				"<leader>gB",
 				function()
-					require("config.vcs").current().blame.buffer()
+					require("config.vcs").get_active_provider().blame.buffer()
 				end,
 				silent = true,
 				desc = "Git: full buffer blame",
+			},
+			{
+				"<leader>gtb",
+				function()
+					require("config.vcs").get_active_provider().blame.toggle_line()
+				end,
+				silent = true,
+				desc = "Git: toggle inline line blame",
 			},
 
 			-- Toggles
 			{
 				"<leader>gT",
 				function()
-					require("config.vcs").current().hunk.toggle_signs()
+					require("config.vcs").get_active_provider().hunk.toggle_signs()
 				end,
 				silent = true,
 				desc = "Git: toggle signs",
@@ -138,10 +146,10 @@ return {
 			current_line_blame_opts = {
 				use_focus = false,
 			},
-			current_line_blame_formatter = "  <abbrev_sha> · <author> · <author_time:%Y-%m-%d>",
+			current_line_blame_formatter = "  <abbrev_sha> · <author> · <author_time:%Y-%m-%d> · <summary>",
 			on_attach = function(bufnr)
 				vim.keymap.set({ "o", "x" }, "ih", function()
-					require("config.vcs").current().hunk.select()
+					require("config.vcs").get_active_provider().hunk.select()
 				end, { buffer = bufnr, desc = "Git: select hunk" })
 			end,
 		},
@@ -168,35 +176,35 @@ return {
 			{
 				"<leader>gdo",
 				function()
-					require("config.vcs").current().diff.open()
+					require("config.vcs").get_active_provider().diff.open()
 				end,
 				desc = "Open Diffview",
 			},
 			{
 				"<leader>gdc",
 				function()
-					require("config.vcs").current().diff.close()
+					require("config.vcs").get_active_provider().diff.close()
 				end,
 				desc = "Close Diffview",
 			},
 			{
 				"<leader>gdh",
 				function()
-					require("config.vcs").current().diff.history_all()
+					require("config.vcs").get_active_provider().diff.history_all()
 				end,
 				desc = "File History (all)",
 			},
 			{
 				"<leader>gdf",
 				function()
-					require("config.vcs").current().diff.history_file()
+					require("config.vcs").get_active_provider().diff.history_file()
 				end,
 				desc = "File History (current)",
 			},
 			{
 				"<leader>gdt",
 				function()
-					require("config.vcs").current().diff.toggle_files()
+					require("config.vcs").get_active_provider().diff.toggle_files()
 				end,
 				desc = "Toggle File Panel",
 			},

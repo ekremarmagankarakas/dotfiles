@@ -3,15 +3,35 @@
 --
 -- Hunk/diff/history/blame operations and the Telescope VCS pickers are
 -- routed through here instead of calling gitsigns/diffview/telescope
--- directly, so a different backend can be swapped in later by adding
--- another entry to `backends` and setting profile.vcs.
+-- directly. Providers register themselves rather than being baked into a
+-- fixed table, so a gitignored module can add another backend (jj, hg, ...)
+-- via M.register_provider without touching this file; profile.vcs picks
+-- which registered provider is active.
 ----------------------------------------------------------------------
 
 local M = {}
 
-local backends = {}
+local providers = {}
 
-backends.git = {
+function M.register_provider(provider)
+	assert(type(provider) == "table" and provider.name, "vcs provider must be a table with a .name")
+	providers[provider.name] = provider
+end
+
+function M.get_active_provider()
+	local name = require("profile").get().vcs or "git"
+	return providers[name] or providers.git
+end
+
+-- Back-compat alias
+M.current = M.get_active_provider
+
+M.providers = providers
+
+----------------------------------------------------------------------
+-- Built-in Git provider
+----------------------------------------------------------------------
+M.register_provider({
 	name = "git",
 
 	hunk = {
@@ -69,7 +89,11 @@ backends.git = {
 	},
 
 	blame = {
-		-- Inline per-line blame toggle (<leader>gb)
+		-- Full commit/CL description popup for the current line (<leader>gb)
+		line_full = function()
+			require("gitsigns").blame_line({ full = true })
+		end,
+		-- Inline per-line blame toggle (<leader>gtb)
 		toggle_line = function()
 			require("gitsigns").toggle_current_line_blame()
 		end,
@@ -89,18 +113,7 @@ backends.git = {
 		branches = function()
 			require("telescope.builtin").git_branches()
 		end,
-		-- Commit history scoped to the current file (<leader>gtb)
-		file_history = function()
-			require("telescope.builtin").git_bcommits()
-		end,
 	},
-}
-
-M.backends = backends
-
-function M.current()
-	local name = require("profile").get().vcs or "git"
-	return backends[name] or backends.git
-end
+})
 
 return M

@@ -14,16 +14,25 @@ if not (vim.uv or vim.loop).fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
+-- Machine-local rtp_paths (gitignored plugin_dirs/modules outside lua/local)
+-- need to be on the runtimepath before anything requires/imports them.
+require("profile").apply_rtp()
+
 require("config")
+
+require("profile").load_modules()
 
 vim.api.nvim_create_user_command("Profile", function()
 	vim.notify("Active profile: " .. require("profile").name(), vim.log.levels.INFO)
 end, { desc = "Show active nvim profile" })
 
+local plugin_spec = { { import = "plugins" } }
+for _, dir in ipairs(require("profile").get().plugin_dirs) do
+	table.insert(plugin_spec, { import = dir })
+end
+
 require("lazy").setup({
-	spec = {
-		{ import = "plugins" },
-	},
+	spec = plugin_spec,
 	checker = { enabled = false },
 })
 

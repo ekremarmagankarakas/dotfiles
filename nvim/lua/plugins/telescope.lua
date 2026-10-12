@@ -58,30 +58,23 @@ return {
 			{
 				"<leader>gtc",
 				function()
-					require("config.vcs").current().pickers.commits()
+					require("config.vcs").get_active_provider().pickers.commits()
 				end,
 				desc = "VCS: commits (Telescope)",
 			},
 			{
 				"<leader>gts",
 				function()
-					require("config.vcs").current().pickers.status()
+					require("config.vcs").get_active_provider().pickers.status()
 				end,
 				desc = "VCS: status (Telescope)",
 			},
 			{
 				"<leader>gtB",
 				function()
-					require("config.vcs").current().pickers.branches()
+					require("config.vcs").get_active_provider().pickers.branches()
 				end,
 				desc = "VCS: branches (Telescope)",
-			},
-			{
-				"<leader>gtb",
-				function()
-					require("config.vcs").current().pickers.file_history()
-				end,
-				desc = "VCS: file history (Telescope)",
 			},
 			{
 				"<leader>fa",

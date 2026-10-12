@@ -3,9 +3,9 @@
 ----------------------------------------------------------------------
 return {
 	"nvim-treesitter/nvim-treesitter",
-	-- Pin to "master" (the legacy configs-style API this file is written
-	-- against). The config function below still detects and falls back to
-	-- the "main" branch's slimmed-down API if that's what's installed.
+	-- Both "main" and "master" ship the new slim API these days; on "master"
+	-- `.setup()` is kept only as a backwards-compat no-op, so don't branch on
+	-- whether it exists -- always drive installs/highlighting manually below.
 	branch = "master",
 	build = ":TSUpdate",
 	cond = function()
@@ -63,50 +63,32 @@ return {
 
 		local ts = require("nvim-treesitter")
 
-		if ts.setup then
-			----------------------------------------------------------------------
-			-- "master" branch: legacy configs-style API
-			----------------------------------------------------------------------
-			ts.setup({
-				ensure_installed = parsers,
-				sync_install = false,
-				auto_install = true,
-				indent = { enable = true },
-				highlight = {
-					enable = true,
-					disable = function(lang, buf)
-						if lang == "markdown" or lang == "markdown_inline" then
-							return true
-						end
-						return is_large(buf)
-					end,
-					additional_vim_regex_highlighting = { "markdown" },
-				},
-			})
-		else
-			----------------------------------------------------------------------
-			-- "main" branch: new slim API, no configs/highlight/indent modules
-			----------------------------------------------------------------------
-			ts.install(parsers)
+		----------------------------------------------------------------------
+		-- Slim API: install the parser list up front, then start
+		-- highlighting manually per-buffer (there's no highlight/indent
+		-- module anymore on either branch).
+		----------------------------------------------------------------------
+		pcall(ts.install, parsers)
 
-			vim.api.nvim_create_autocmd("FileType", {
-				callback = function(args)
-					local buf = args.buf
-					local ft = vim.bo[buf].filetype
-					local lang = vim.treesitter.language.get_lang(ft) or ft
+		vim.api.nvim_create_autocmd("FileType", {
+			callback = function(args)
+				local buf = args.buf
+				local ft = vim.bo[buf].filetype
+				local lang = vim.treesitter.language.get_lang(ft) or ft
 
-					if lang == "markdown" or lang == "markdown_inline" or is_large(buf) then
-						return
-					end
+				if lang == "markdown" or lang == "markdown_inline" or is_large(buf) then
+					return
+				end
 
-					if not (ts.get_installed and vim.tbl_contains(ts.get_installed(), lang)) then
-						pcall(ts.install, { lang })
-					end
+				if not (ts.get_installed and vim.tbl_contains(ts.get_installed(), lang)) then
+					pcall(ts.install, { lang })
+				end
 
-					pcall(vim.treesitter.start, buf, lang)
-				end,
-			})
-		end
+				-- Neovim 0.12 raises instead of returning an error when no
+				-- parser is installed/available for `lang` -- always pcall.
+				pcall(vim.treesitter.start, buf, lang)
+			end,
+		})
 
 		-- Auto-close and auto-rename HTML/JSX tags
 		require("nvim-ts-autotag").setup()

@@ -31,32 +31,38 @@ return {
 	end,
 	dependencies = {
 		-- Mason
-		{ "mason-org/mason.nvim", opts = {} },
+		{
+			"mason-org/mason.nvim",
+			cond = function()
+				return require("profile").plugin_enabled("mason.nvim")
+			end,
+			opts = {},
+		},
 		{
 			"WhoIsSethDaniel/mason-tool-installer.nvim",
+			cond = function()
+				return require("profile").plugin_enabled("mason-tool-installer.nvim")
+			end,
 			opts = function()
-				local ensure_installed = {
-					-- Formatters
-					"stylua",
-					"prettier",
-					"shfmt",
-					"goimports",
-					"gofumpt",
-					"clang-format",
-					"sqlfmt",
-					-- Linters
-					"ruff",
-					"eslint_d",
-					"shellcheck",
-					-- DAP adapters
-					"debugpy",
-					"delve",
-					"js-debug-adapter",
-					"codelldb",
-				}
+				local profile = require("profile")
+				local ensure_installed = {}
+
+				if profile.plugin_enabled("format") then
+					vim.list_extend(ensure_installed, {
+						"stylua", "prettier", "shfmt", "goimports", "gofumpt", "clang-format", "sqlfmt",
+					})
+				end
+
+				if profile.plugin_enabled("lint") then
+					vim.list_extend(ensure_installed, { "ruff", "eslint_d", "shellcheck" })
+				end
+
+				if profile.plugin_enabled("debug") then
+					vim.list_extend(ensure_installed, { "debugpy", "delve", "js-debug-adapter", "codelldb" })
+				end
 
 				for _, server in ipairs(ALL_SERVERS) do
-					if require("profile").lsp_server_enabled(server) then
+					if profile.lsp_server_enabled(server) then
 						table.insert(ensure_installed, SERVER_TOOLS[server])
 					end
 				end
@@ -73,7 +79,18 @@ return {
 		"saadparwaiz1/cmp_luasnip",
 	},
 
-	config = function()
+	-- Lets gitignored/other modules hook into capabilities and register
+	-- additional LSP servers without editing this file: see profile.extra
+	-- ("lsp_update_capabilities", "lsp_extra_setup").
+	opts = function()
+		local profile = require("profile")
+		return {
+			update_capabilities = profile.extra("lsp_update_capabilities"),
+			extra_setup = profile.extra("lsp_extra_setup"),
+		}
+	end,
+
+	config = function(_, opts)
 		--------------------------------------------------------------------------
 		-- CMP
 		--------------------------------------------------------------------------
@@ -130,8 +147,13 @@ return {
 		----------------------------------------------------------------------
 		-- LSP core
 		----------------------------------------------------------------------
+		local capabilities = cmp_lsp.default_capabilities()
+		for _, update_capabilities in ipairs(opts.update_capabilities) do
+			capabilities = update_capabilities(capabilities) or capabilities
+		end
+
 		vim.lsp.config("*", {
-			capabilities = cmp_lsp.default_capabilities(),
+			capabilities = capabilities,
 		})
 
 		-- LSP keymaps
@@ -384,6 +406,15 @@ return {
 			end
 		end
 		vim.lsp.enable(enabled_servers)
+
+		-- Let other (possibly gitignored) modules register their own servers
+		-- now that capabilities/built-in servers are set up.
+		for _, extra_setup in ipairs(opts.extra_setup) do
+			local ok, err = pcall(extra_setup, capabilities)
+			if not ok then
+				vim.notify("lsp: extra_setup hook failed: " .. tostring(err), vim.log.levels.WARN)
+			end
+		end
 
 		-- R (installed via R, not Mason)
 		-- Use autocmd to explicitly start server since it's not managed by Mason

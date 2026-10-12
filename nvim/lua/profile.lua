@@ -37,6 +37,22 @@ local defaults = {
 	-- VCS backend used by config.vcs (see lua/config/vcs.lua)
 	vcs = "git",
 
+	-- Extra module names to require() once config/options/keymaps are loaded.
+	-- Lets gitignored machine-local files (e.g. lua/local/*.lua) do more than
+	-- just return an overlay table -- they can be full setup modules.
+	modules = {},
+
+	-- Extra lazy.nvim spec `import` targets (module names resolvable on the
+	-- runtimepath), merged into init.lua's lazy.setup({ spec = ... }) next to
+	-- { import = "plugins" }. Lets gitignored plugin specs load the same way
+	-- the tracked ones do.
+	plugin_dirs = {},
+
+	-- Extra directories prepended to 'runtimepath' so gitignored modules and
+	-- plugin_dirs living outside lua/local (e.g. a separate untracked repo)
+	-- are requireable/importable at all.
+	rtp_paths = {},
+
 	-- Additive extension points consumed by parameterized plugin specs.
 	extra = {
 		-- Extra nvim-cmp sources appended to the default list.
@@ -49,6 +65,13 @@ local defaults = {
 		formatters = {},
 		-- Extra which-key groups: { { "<leader>x", group = "..." }, ... }
 		whichkey_groups = {},
+		-- Extra fns(capabilities) -> capabilities, composed over the default
+		-- cmp_nvim_lsp capabilities before any server is configured.
+		lsp_update_capabilities = {},
+		-- Extra fns(capabilities) run once after all built-in servers are set
+		-- up, so other (possibly gitignored) modules can register additional
+		-- LSP servers via vim.lsp.config/vim.lsp.enable.
+		lsp_extra_setup = {},
 	},
 }
 
@@ -115,16 +138,32 @@ local profiles = {
 	},
 }
 
-function M.name()
-	return vim.g.nvim_profile or os.getenv("NVIM_PROFILE") or "personal"
-end
-
 local function load_local_overlay()
 	local ok, overlay = pcall(require, "profile_local")
 	if ok and type(overlay) == "table" then
 		return overlay
 	end
 	return nil
+end
+
+function M.name()
+	if vim.g.nvim_profile then
+		return vim.g.nvim_profile
+	end
+
+	local env = os.getenv("NVIM_PROFILE")
+	if env then
+		return env
+	end
+
+	-- profile_local.lua can pick the active profile itself, e.g.
+	-- `return { profile = "minimal", ... }`
+	local overlay = load_local_overlay()
+	if overlay and overlay.profile then
+		return overlay.profile
+	end
+
+	return "personal"
 end
 
 local function load_local_dir_overlays()
@@ -208,6 +247,25 @@ function M.apply_options()
 	end
 	for k, v in pairs(p.globals) do
 		vim.g[k] = v
+	end
+end
+
+-- Prepend profile.rtp_paths to 'runtimepath'. Call this before anything
+-- tries to require() a module or lazy-import a spec living in one of them.
+function M.apply_rtp()
+	for _, path in ipairs(M.get().rtp_paths) do
+		vim.opt.rtp:prepend(vim.fn.expand(path))
+	end
+end
+
+-- require() every module in profile.modules, tolerating a missing/broken one
+-- so a machine-local typo doesn't take the whole config down.
+function M.load_modules()
+	for _, name in ipairs(M.get().modules) do
+		local ok, err = pcall(require, name)
+		if not ok then
+			vim.notify("profile: failed to load module '" .. name .. "': " .. tostring(err), vim.log.levels.WARN)
+		end
 	end
 end
 

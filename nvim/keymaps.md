@@ -199,7 +199,6 @@ Leader: `Space` | Local leader: `\`
 | `<leader>gtc` | n | VCS: commits |
 | `<leader>gts` | n | VCS: status |
 | `<leader>gtB` | n | VCS: branches |
-| `<leader>gtb` | n | VCS: file history (commits touching current file) |
 
 ### Flash (`lua/plugins/tools.lua`)
 
@@ -228,8 +227,9 @@ Leader: `Space` | Local leader: `\`
 ### Git / VCS (`lua/plugins/git.lua`, `lua/config/vcs.lua`)
 
 Hunk, diff, and blame operations are routed through `config.vcs`, a pluggable
-layer defaulting to Git (see `lua/config/vcs.lua`); swapping the backend is a
-matter of adding another entry to `vcs.backends` and setting `profile.vcs`.
+provider registry defaulting to Git (see `lua/config/vcs.lua`); add another
+backend (jj, hg, ...) by calling `vcs.register_provider({ name = ... })` from
+any module and pointing `profile.vcs` at its name.
 
 | Key | Mode | Description |
 |-----|------|-------------|
@@ -241,8 +241,9 @@ matter of adding another entry to `vcs.backends` and setting `profile.vcs`.
 | `<leader>gS` | n | Stage buffer |
 | `<leader>gR` | n | Reset buffer |
 | `<leader>gu` | n | Undo stage hunk |
-| `<leader>gb` | n | Toggle inline line blame |
+| `<leader>gb` | n | Full commit/CL description popup for current line (`blame_line({ full = true })`) |
 | `<leader>gB` | n | Full buffer blame |
+| `<leader>gtb` | n | Toggle inline line blame |
 | `<leader>gT` | n | Toggle git signs |
 | `ih` | o/x | Select hunk text object |
 | `<leader>gdo` | n | Open Diffview |
@@ -313,10 +314,23 @@ matter of adding another entry to `vcs.backends` and setting `profile.vcs`.
 ## Profiles
 
 Named profiles (`personal`, `minimal`) toggle plugins, LSP servers, formatters,
-and `vim.opt`/`vim.g` settings — see `lua/profile.lua`. Select one with
-`vim.g.nvim_profile` or the `NVIM_PROFILE` env var (default: `personal`).
+linters/debug adapters (`profile.plugins.format/lint/debug`), and
+`vim.opt`/`vim.g` settings — see `lua/profile.lua`. Pick one, in priority
+order: `vim.g.nvim_profile`, the `NVIM_PROFILE` env var, a `profile` field
+returned from `profile_local.lua`, else `personal`.
+
 Machine-local overrides go in the gitignored `lua/profile_local.lua` or any
-file under `lua/local/`, deep-merged on top of the named profile.
+file under `lua/local/`, deep-merged on top of the named profile. Three more
+fields exist purely to let gitignored config live outside those two spots:
+
+- `profile.rtp_paths` — extra directories prepended to `'runtimepath'`.
+- `profile.modules` — extra module names `require()`'d after config loads.
+- `profile.plugin_dirs` — extra `{ import = ... }` targets merged into
+  `lazy.setup({ spec = ... })` next to `{ import = "plugins" }`.
+
+`lsp.lua` also exposes `profile.extra("lsp_update_capabilities")` and
+`profile.extra("lsp_extra_setup")` so other modules can adjust LSP
+capabilities or register whole new servers without editing `lsp.lua`.
 
 | Command | Description |
 |---------|--------------|

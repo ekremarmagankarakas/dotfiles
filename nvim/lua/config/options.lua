@@ -39,5 +39,12 @@ vim.g.maplocalleader = "\\"
 -- Python
 vim.g.python_recommended_style = 0
 
+-- Pattern-matching engine limit (large :%s// patterns, treesitter-related regex fallback)
+vim.opt.maxmempattern = 20000
+
+-- Force the "files" ref storage format for git commands nvim shells out to
+-- (gitsigns, diffview, fugitive-likes), independent of the user's git config
+vim.env.GIT_DEFAULT_REF_FORMAT = "files"
+
 -- Profile overrides (machine-local tweaks live in profile_local.lua / lua/local/*.lua)
 require("profile").apply_options()
