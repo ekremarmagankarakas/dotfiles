@@ -294,26 +294,43 @@ abstraction.
 | `<leader>dtj` | n | Toggle `justMyCode` |
 | `<leader>dtv` | n | Toggle `.vscode/launch.json` loading |
 
-### AI (`lua/plugins/ai.lua`)
+### AI (`lua/config/ai_keymaps.lua`, `lua/config/ai.lua`, `lua/plugins/ai.lua`)
+
+Suggestion and chat operations are routed through `config.ai` (see
+`lua/config/ai.lua`), the same pluggable-provider pattern used for VCS.
+Copilot is the always-available static fallback. Add another backend
+(CodeCompanion, avante.nvim, a Claude-based chat plugin, ...) by calling
+`ai.register_provider({ name = ..., is_active = function() ... end,
+suggest = {...}, chat = {...} })` from any module; any `suggest`/`chat`
+action it doesn't implement is auto-filled with a no-op that notifies "not
+supported". The keymaps below are bound unconditionally from
+`lua/config/ai_keymaps.lua`, independent of whether `copilot.lua`/
+`CopilotChat.nvim` are enabled via profile -- if the active provider's
+backing plugin isn't loaded, the keymap notifies "not loaded" instead of
+erroring.
+
+Not part of this abstraction (each plugin's own tightly-coupled UI, stays
+in `lua/plugins/ai.lua`): the ghost-text accept/next/prev/dismiss insert-mode
+keys, and CopilotChat's chat-buffer-local accept/show/yank-diff keys.
 
 | Key | Mode | Description |
 |-----|------|-------------|
-| `<leader>act` | n | Copilot toggle |
-| `<leader>acd` | n | Copilot disable |
-| `<leader>ace` | n | Copilot enable |
-| `<leader>aca` | n | Toggle Copilot auto-trigger |
-| `Alt-y` | i | Accept Copilot suggestion |
-| `Alt-]` | i | Next suggestion |
-| `Alt-[` | i | Previous suggestion |
-| `Ctrl-]` | i | Dismiss suggestion |
-| `<leader>aac` | n | Toggle CopilotChat |
-| `<leader>aaf` | v | CopilotChat: fix selection |
-| `<leader>aar` | v | CopilotChat: refactor selection |
-| `<leader>aae` | v | CopilotChat: explain selection |
-| `<leader>aat` | v | CopilotChat: generate tests for selection |
-| `<leader>aaa` | n/i (chat buffer) | CopilotChat: accept diff |
-| `<leader>aad` | n (chat buffer) | CopilotChat: show diff |
-| `<leader>aay` | n (chat buffer) | CopilotChat: yank diff |
+| `<leader>act` | n | Toggle inline suggestions |
+| `<leader>acd` | n | Disable inline suggestions |
+| `<leader>ace` | n | Enable inline suggestions |
+| `<leader>aca` | n | Toggle suggestion auto-trigger |
+| `Alt-y` | i | Accept Copilot suggestion (copilot.lua-specific) |
+| `Alt-]` | i | Next suggestion (copilot.lua-specific) |
+| `Alt-[` | i | Previous suggestion (copilot.lua-specific) |
+| `Ctrl-]` | i | Dismiss suggestion (copilot.lua-specific) |
+| `<leader>aac` | n | Toggle chat |
+| `<leader>aaf` | v | Fix selection |
+| `<leader>aar` | v | Refactor selection |
+| `<leader>aae` | v | Explain selection |
+| `<leader>aat` | v | Generate tests for selection |
+| `<leader>aaa` | n/i (chat buffer) | CopilotChat: accept diff (CopilotChat-specific) |
+| `<leader>aad` | n (chat buffer) | CopilotChat: show diff (CopilotChat-specific) |
+| `<leader>aay` | n (chat buffer) | CopilotChat: yank diff (CopilotChat-specific) |
 
 ### Other Tools (`lua/plugins/tools.lua`, `lua/plugins/whichkey.lua`, `lua/plugins/markdown.lua`, `lua/plugins/snippets.lua`)
 

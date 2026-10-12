@@ -1,8 +1,12 @@
-local copilot_auto_trigger = false
-
 return {
 	----------------------------------------------------------------------
 	-- Copilot
+	--
+	-- Keymaps that dispatch through config.ai (<leader>act/ace/acd/aca) live
+	-- in lua/config/ai_keymaps.lua, not here -- they need to exist
+	-- independent of whether this plugin is enabled. The ghost-text
+	-- accept/next/prev/dismiss keys below stay plugin-local since they're
+	-- copilot.lua's own tightly-coupled insert-mode UI.
 	----------------------------------------------------------------------
 	{
 		"zbirenbaum/copilot.lua",
@@ -11,21 +15,6 @@ return {
 		end,
 		cmd = "Copilot",
 		event = "InsertEnter",
-		keys = {
-			{ "<leader>act", "<cmd>Copilot toggle<cr>", silent = true, desc = "Copilot: toggle" },
-			{ "<leader>acd", "<cmd>Copilot disable<cr>", silent = true, desc = "Copilot: disable" },
-			{ "<leader>ace", "<cmd>Copilot enable<cr>", silent = true, desc = "Copilot: enable" },
-			{
-				"<leader>aca",
-				function()
-					copilot_auto_trigger = not copilot_auto_trigger
-					require("copilot.suggestion").toggle_auto_trigger()
-					vim.notify("Copilot auto-trigger: " .. (copilot_auto_trigger and "ON" or "OFF"))
-				end,
-				silent = true,
-				desc = "Copilot: toggle auto-trigger",
-			},
-		},
 		opts = {
 			suggestion = {
 				auto_trigger = false,
@@ -42,6 +31,11 @@ return {
 
 	----------------------------------------------------------------------
 	-- Copilot Chat (for selection prompts)
+	--
+	-- Keymaps that dispatch through config.ai (<leader>aac/aaf/aar/aae/aat)
+	-- live in lua/config/ai_keymaps.lua. The chat-buffer-local mappings
+	-- below stay here since they're CopilotChat's own tightly-coupled UI,
+	-- not part of the AI abstraction.
 	----------------------------------------------------------------------
 	{
 		"CopilotC-Nvim/CopilotChat.nvim",
@@ -78,30 +72,11 @@ return {
 			},
 		},
 
+		-- CopilotChat's real module name ("CopilotChat") doesn't match
+		-- lazy.nvim's inferred default (lowercased plugin name), so it
+		-- needs an explicit config() to call setup() on the right module.
 		config = function(_, opts)
-			local chat = require("CopilotChat")
-			chat.setup(opts)
-
-			-- Visual selection hotkeys (send selection, get a response in chat)
-			-- Uses the built-in #selection resource so you do not need a selection API.
-			vim.keymap.set("v", "<leader>aaf", function()
-				chat.ask("#selection /Fix", { prompt = "Fix selection" })
-			end, { desc = "CopilotChat: Fix selection" })
-
-			vim.keymap.set("v", "<leader>aar", function()
-				chat.ask("#selection /Optimize", { prompt = "Refactor selection" })
-			end, { desc = "CopilotChat: Refactor selection" })
-
-			vim.keymap.set("v", "<leader>aae", function()
-				chat.ask("#selection /Explain", { prompt = "Explain selection" })
-			end, { desc = "CopilotChat: Explain selection" })
-
-			vim.keymap.set("v", "<leader>aat", function()
-				chat.ask("#selection /Tests", { prompt = "Generate tests for selection" })
-			end, { desc = "CopilotChat: Tests for selection" })
-
-			-- open/toggle chat quickly
-			vim.keymap.set("n", "<leader>aac", "<cmd>CopilotChatToggle<cr>", { desc = "CopilotChat: Toggle" })
+			require("CopilotChat").setup(opts)
 		end,
 	},
 }
