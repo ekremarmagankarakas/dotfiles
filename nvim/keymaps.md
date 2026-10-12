@@ -321,11 +321,14 @@ what they actually support.
 
 ## Profiles
 
-Named profiles (`personal`, `minimal`) toggle plugins, LSP servers, formatters,
-linters/debug adapters (`profile.plugins.format/lint/debug`), and
-`vim.opt`/`vim.g` settings — see `lua/profile.lua`. Pick one, in priority
-order: `vim.g.nvim_profile`, the `NVIM_PROFILE` env var, a `profile` field
-returned from `profile_local.lua`, else `personal`.
+Named profiles (`personal`, `minimal`) toggle plugins, LSP servers, and
+`vim.opt`/`vim.g` settings — see `lua/profile.lua`. The Mason-installed
+formatter/linter/DAP tool groups ride on the matching plugin's own toggle
+(`profile.plugins["conform.nvim"]`, `["nvim-lint"]`, `["nvim-dap"]`) rather
+than a separate key, so disabling one of those plugins also stops Mason from
+installing its tools. Pick the active profile, in priority order:
+`vim.g.nvim_profile`, the `NVIM_PROFILE` env var, a `profile` field returned
+from `profile_local.lua`, else `personal`.
 
 Machine-local overrides go in the gitignored `lua/profile_local.lua` or any
 file under `lua/local/`, deep-merged on top of the named profile. Three more
