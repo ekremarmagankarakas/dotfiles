@@ -121,10 +121,11 @@ return {
 				desc = "Find: selected dirs",
 			},
 		},
-		config = function()
-			local telescope = require("telescope")
-
-			telescope.setup({
+		-- A plain table here would be clobbered if another module's spec for
+		-- this plugin also sets `opts` -- a function lets lazy.nvim merge
+		-- every module's opts() result into one table before config() runs.
+		opts = function()
+			return {
 				defaults = {
 					sorting_strategy = "ascending",
 					layout_strategy = "horizontal",
@@ -142,7 +143,13 @@ return {
 				extensions = {
 					["ui-select"] = require("telescope.themes").get_dropdown(),
 				},
-			})
+			}
+		end,
+
+		config = function(_, opts)
+			local telescope = require("telescope")
+
+			telescope.setup(opts)
 
 			telescope.load_extension("fzf")
 			telescope.load_extension("ui-select")
