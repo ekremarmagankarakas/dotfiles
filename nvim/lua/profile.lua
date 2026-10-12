@@ -26,6 +26,9 @@ local defaults = {
 	-- Per-filetype formatter enable/disable, keyed by filetype. Unset == enabled.
 	format = {},
 
+	-- Per-filetype linter enable/disable, keyed by filetype. Unset == enabled.
+	lint = {},
+
 	-- vim.opt.<key> = value
 	options = {},
 	-- vim.g.<key> = value
@@ -132,6 +135,13 @@ local profiles = {
 			tex = false,
 			latex = false,
 		},
+		lint = {
+			python = false,
+			javascript = false,
+			typescript = false,
+			typescriptreact = false,
+			javascriptreact = false,
+		},
 		options = {
 			relativenumber = false,
 		},
@@ -196,13 +206,15 @@ function M.get()
 
 	local profile = vim.tbl_deep_extend("force", vim.deepcopy(defaults), profiles[M.name()] or {})
 
+	-- lua/local/*.lua are supplementary extras; profile_local.lua is "the"
+	-- per-machine override file, so it's applied last and wins any conflict.
+	for _, overlay in ipairs(load_local_dir_overlays()) do
+		profile = vim.tbl_deep_extend("force", profile, overlay)
+	end
+
 	local local_overlay = load_local_overlay()
 	if local_overlay then
 		profile = vim.tbl_deep_extend("force", profile, local_overlay)
-	end
-
-	for _, overlay in ipairs(load_local_dir_overlays()) do
-		profile = vim.tbl_deep_extend("force", profile, overlay)
 	end
 
 	M._cache = profile
@@ -231,6 +243,14 @@ end
 
 function M.format_enabled(ft)
 	local v = M.get().format[ft]
+	if v == nil then
+		return true
+	end
+	return v
+end
+
+function M.lint_enabled(ft)
+	local v = M.get().lint[ft]
 	if v == nil then
 		return true
 	end

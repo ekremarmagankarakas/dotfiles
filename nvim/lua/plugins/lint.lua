@@ -5,9 +5,10 @@ return {
 	end,
 	event = { "BufReadPre", "BufNewFile" },
 	config = function()
+		local profile = require("profile")
 		local lint = require("lint")
 
-		lint.linters_by_ft = {
+		local linters_by_ft = {
 			python = { "ruff" },
 			javascript = { "eslint_d" },
 			typescript = { "eslint_d" },
@@ -16,6 +17,14 @@ return {
 			sh = { "shellcheck" },
 			bash = { "shellcheck" },
 		}
+
+		for ft in pairs(linters_by_ft) do
+			if not profile.lint_enabled(ft) then
+				linters_by_ft[ft] = nil
+			end
+		end
+
+		lint.linters_by_ft = linters_by_ft
 
 		-- eslint config files to check for
 		local eslint_configs = {

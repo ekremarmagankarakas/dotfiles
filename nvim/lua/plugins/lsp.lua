@@ -23,6 +23,43 @@ local ALL_SERVERS = {
 	"rust_analyzer", "gopls", "bashls", "intelephense", "sqls", "cssls", "html",
 }
 
+-- Mason package name(s) for each filetype's formatter(s) in format.lua's
+-- formatters_by_ft, restricted to the formatters Mason actually manages
+-- (rustfmt/zigfmt/r_styler/tex_fmt ride on the language's own toolchain).
+-- Keep in sync with format.lua.
+local FORMAT_TOOLS = {
+	lua = { "stylua" },
+	python = { "ruff" }, -- ruff_format calls the same `ruff` binary
+	c = { "clang-format" },
+	cpp = { "clang-format" },
+	javascript = { "prettier" },
+	typescript = { "prettier" },
+	typescriptreact = { "prettier" },
+	javascriptreact = { "prettier" },
+	go = { "goimports", "gofumpt" },
+	bash = { "shfmt" },
+	sh = { "shfmt" },
+	markdown = { "prettier" },
+	php = { "prettier" },
+	css = { "prettier" },
+	scss = { "prettier" },
+	less = { "prettier" },
+	html = { "prettier" },
+	sql = { "sqlfmt" },
+}
+
+-- Mason package name(s) for each filetype's linter(s) in lint.lua's
+-- linters_by_ft. Keep in sync with lint.lua.
+local LINT_TOOLS = {
+	python = { "ruff" },
+	javascript = { "eslint_d" },
+	typescript = { "eslint_d" },
+	typescriptreact = { "eslint_d" },
+	javascriptreact = { "eslint_d" },
+	sh = { "shellcheck" },
+	bash = { "shellcheck" },
+}
+
 return {
 	"neovim/nvim-lspconfig",
 	version = "*",
@@ -41,29 +78,51 @@ return {
 		{
 			"WhoIsSethDaniel/mason-tool-installer.nvim",
 			cond = function()
-				return require("profile").plugin_enabled("mason-tool-installer.nvim")
+				local profile = require("profile")
+				-- mason-tool-installer needs mason.nvim itself to actually be
+				-- present, so disabling mason.nvim takes this out too.
+				return profile.plugin_enabled("mason-tool-installer.nvim") and profile.plugin_enabled("mason.nvim")
 			end,
 			opts = function()
 				local profile = require("profile")
 				local ensure_installed = {}
+				local seen = {}
+				local function add(name)
+					if name and not seen[name] then
+						seen[name] = true
+						table.insert(ensure_installed, name)
+					end
+				end
 
 				if profile.plugin_enabled("conform.nvim") then
-					vim.list_extend(ensure_installed, {
-						"stylua", "prettier", "shfmt", "goimports", "gofumpt", "clang-format", "sqlfmt",
-					})
+					for ft, tools in pairs(FORMAT_TOOLS) do
+						if profile.format_enabled(ft) then
+							for _, tool in ipairs(tools) do
+								add(tool)
+							end
+						end
+					end
 				end
 
 				if profile.plugin_enabled("nvim-lint") then
-					vim.list_extend(ensure_installed, { "ruff", "eslint_d", "shellcheck" })
+					for ft, tools in pairs(LINT_TOOLS) do
+						if profile.lint_enabled(ft) then
+							for _, tool in ipairs(tools) do
+								add(tool)
+							end
+						end
+					end
 				end
 
 				if profile.plugin_enabled("nvim-dap") then
-					vim.list_extend(ensure_installed, { "debugpy", "delve", "js-debug-adapter", "codelldb" })
+					for _, tool in ipairs({ "debugpy", "delve", "js-debug-adapter", "codelldb" }) do
+						add(tool)
+					end
 				end
 
 				for _, server in ipairs(ALL_SERVERS) do
 					if profile.lsp_server_enabled(server) then
-						table.insert(ensure_installed, SERVER_TOOLS[server])
+						add(SERVER_TOOLS[server])
 					end
 				end
 
