@@ -2,18 +2,21 @@
 -- AI assistant abstraction
 --
 -- Inline-suggestion and chat operations are routed through here instead of
--- calling copilot.lua/CopilotChat.nvim directly. Copilot is the static,
--- always-available fallback; anything else (CodeCompanion, avante.nvim, a
--- Claude-based chat plugin, ...) registers itself with M.register_provider
--- and implements is_active() to say when it should take over.
--- get_active_provider() checks registered providers in registration order
--- and falls back to Copilot if none claim it.
+-- calling copilot.lua/CopilotChat.nvim directly. Unlike config.vcs, there is
+-- NO static default provider -- git is a sane universal fallback for VCS,
+-- but there's no equivalent "obviously correct" AI assistant, and Copilot
+-- is off by default in every profile anyway. If nothing is active,
+-- get_active_provider() returns nil and the keymaps just say so.
+--
+-- Copilot is registered below like any other provider would be: it's only
+-- "active" when its own plugin toggle says so. Register more providers
+-- (CodeCompanion, avante.nvim, a Claude-based chat plugin, ...) the same
+-- way, from any module, via M.register_provider.
 --
 -- The keymaps that call into this (lua/config/ai_keymaps.lua) are always
 -- loaded, independent of whether copilot.lua/CopilotChat.nvim are enabled
--- via profile -- so the Copilot provider's own functions below guard every
--- call into those plugins and notify instead of erroring if one isn't
--- loaded.
+-- via profile -- so Copilot's own functions below guard every call into
+-- those plugins and notify instead of erroring if one isn't loaded.
 --
 -- NOT part of this abstraction: the ghost-text accept/next/prev/dismiss
 -- insert-mode keys (copilot.lua's own `opts.suggestion.keymap`) and
@@ -25,9 +28,16 @@
 
 local M = {}
 
-local custom_providers = {}
+-- Registered providers, in registration order.
+local providers = {}
 
-local SCHEMA_GROUPS = { "suggest", "chat" }
+-- The stable suggest/chat action names every provider is measured against.
+-- Deliberately not derived from any one provider's implementation table --
+-- there's no privileged "default" provider here to borrow a schema from.
+local SCHEMA = {
+	suggest = { "toggle", "enable", "disable", "toggle_auto_trigger" },
+	chat = { "toggle", "fix", "refactor", "explain", "tests" },
+}
 
 ----------------------------------------------------------------------
 -- Guards: call into an optional module/command without erroring if it
@@ -66,12 +76,68 @@ local function with_command(cmd)
 end
 
 ----------------------------------------------------------------------
--- Built-in Copilot provider (the fallback; always available, no is_active)
+-- Provider registration
+----------------------------------------------------------------------
+
+local function noop_action(provider_name, group, action)
+	return function()
+		vim.notify(
+			string.format("%s: %s.%s is not supported by this AI provider", provider_name, group, action),
+			vim.log.levels.WARN
+		)
+	end
+end
+
+-- Register an AI provider. Only the suggest/chat actions it actually
+-- implements need defining -- any left out (e.g. a chat-only assistant
+-- with no inline suggestions) are auto-filled with a no-op that just
+-- notifies "not supported", instead of callers erroring on a missing field.
+function M.register_provider(provider)
+	assert(type(provider) == "table" and provider.name, "ai provider must be a table with a .name")
+
+	for group, actions in pairs(SCHEMA) do
+		provider[group] = provider[group] or {}
+		for _, action in ipairs(actions) do
+			if type(provider[group][action]) ~= "function" then
+				provider[group][action] = noop_action(provider.name, group, action)
+			end
+		end
+	end
+
+	table.insert(providers, provider)
+	return provider
+end
+
+M.providers = providers
+
+-- Ask each registered provider (in registration order) whether it's
+-- active; the first match wins. No match == no AI provider at all --
+-- there's no implicit fallback.
+function M.get_active_provider()
+	for _, provider in ipairs(providers) do
+		if provider.is_active and provider.is_active() then
+			return provider
+		end
+	end
+	return nil
+end
+
+-- Back-compat alias (matches config.vcs's naming)
+M.current = M.get_active_provider
+
+----------------------------------------------------------------------
+-- Copilot: registered the same way any other provider would be. Active
+-- only when at least one of its two plugins is actually enabled.
 ----------------------------------------------------------------------
 local copilot_auto_trigger = false
 
-local copilot_provider = {
+M.register_provider({
 	name = "copilot",
+
+	is_active = function()
+		local profile = require("profile")
+		return profile.plugin_enabled("copilot.lua") or profile.plugin_enabled("CopilotChat.nvim")
+	end,
 
 	suggest = {
 		toggle = with_command("Copilot toggle"),
@@ -101,58 +167,6 @@ local copilot_provider = {
 			chat.ask("#selection /Tests", { prompt = "Generate tests for selection" })
 		end),
 	},
-}
-
-M.copilot_provider = copilot_provider
-
-----------------------------------------------------------------------
--- Provider registration
-----------------------------------------------------------------------
-
-local function noop_action(provider_name, group, action)
-	return function()
-		vim.notify(
-			string.format("%s: %s.%s is not supported by this AI provider", provider_name, group, action),
-			vim.log.levels.WARN
-		)
-	end
-end
-
--- Register a custom AI provider. Only the suggest/chat actions it actually
--- implements need defining -- any left out (e.g. a chat-only assistant with
--- no inline suggestions) are auto-filled with a no-op that just notifies
--- "not supported", instead of callers erroring on a missing field.
-function M.register_provider(provider)
-	assert(type(provider) == "table" and provider.name, "ai provider must be a table with a .name")
-
-	for _, group in ipairs(SCHEMA_GROUPS) do
-		provider[group] = provider[group] or {}
-		for action in pairs(copilot_provider[group]) do
-			if type(provider[group][action]) ~= "function" then
-				provider[group][action] = noop_action(provider.name, group, action)
-			end
-		end
-	end
-
-	table.insert(custom_providers, provider)
-	return provider
-end
-
-M.providers = custom_providers
-
--- Ask each registered provider (in registration order) whether it wants to
--- handle the current buffer/context; the first match wins. Copilot is the
--- fallback when nothing claims it.
-function M.get_active_provider()
-	for _, provider in ipairs(custom_providers) do
-		if provider.is_active and provider.is_active() then
-			return provider
-		end
-	end
-	return copilot_provider
-end
-
--- Back-compat alias (matches config.vcs's naming)
-M.current = M.get_active_provider
+})
 
 return M
