@@ -34,9 +34,6 @@ local defaults = {
 	-- Directories searched by <leader>fa
 	search_dirs = { "~/Dev", "~/Northeastern", "~/Work" },
 
-	-- VCS backend used by config.vcs (see lua/config/vcs.lua)
-	vcs = "git",
-
 	-- Gates the BufWritePre trim-trailing-whitespace autocmd in autocmds.lua.
 	-- Kept outside `options` since it isn't a real vim.opt key.
 	trim_trailing_whitespace = true,

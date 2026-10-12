@@ -226,10 +226,18 @@ Leader: `Space` | Local leader: `\`
 
 ### Git / VCS (`lua/plugins/git.lua`, `lua/config/vcs.lua`)
 
-Hunk, diff, and blame operations are routed through `config.vcs`, a pluggable
-provider registry defaulting to Git (see `lua/config/vcs.lua`); add another
-backend (jj, hg, ...) by calling `vcs.register_provider({ name = ... })` from
-any module and pointing `profile.vcs` at its name.
+Hunk, diff, and blame operations are routed through `config.vcs` (see
+`lua/config/vcs.lua`). Git is the always-available static fallback. Add
+another backend (jj, hg, ...) by calling `vcs.register_provider({ name = ...,
+is_active = function() ... end, hunk = {...}, diff = {...}, blame = {...},
+pickers = {...} })` from any module; `is_active()` should inspect the current
+buffer/cwd (e.g. look for a `.jj` dir) to decide whether that provider should
+take over. `get_active_provider()` checks registered providers in
+registration order and falls back to Git if none claim the buffer -- there's
+no static "selected backend" setting. Any hunk/diff/blame/pickers action a
+provider doesn't implement (e.g. a VCS with no staging area) is auto-filled
+with a no-op that notifies "not supported", so providers only need to define
+what they actually support.
 
 | Key | Mode | Description |
 |-----|------|-------------|
@@ -349,5 +357,4 @@ capabilities or register whole new servers without editing `lsp.lua`.
 | `<leader>m` | markdown |
 | `<leader>n` | files (oil) — currently a single direct action, not an actual submenu |
 | `<leader>s` | settings |
-| `<leader>w` | windows |
 | `<leader>?` | whichkey |

@@ -39,7 +39,6 @@ return {
 				{ "<leader>m", group = "markdown" },
 				{ "<leader>n", group = "files" },
 				{ "<leader>s", group = "settings" },
-				{ "<leader>w", group = "windows" },
 				{ "<leader>?", group = "whichkey" },
 			}
 
