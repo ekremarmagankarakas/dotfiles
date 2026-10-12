@@ -67,6 +67,10 @@ vim.api.nvim_create_autocmd("BufWritePre", {
 	group = trim_ws_group,
 	desc = "Trim trailing whitespace",
 	callback = function(args)
+		if not require("profile").get().trim_trailing_whitespace then
+			return
+		end
+
 		local bufnr = args.buf
 		if vim.bo[bufnr].buftype ~= "" then
 			return

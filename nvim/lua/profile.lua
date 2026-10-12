@@ -37,6 +37,10 @@ local defaults = {
 	-- VCS backend used by config.vcs (see lua/config/vcs.lua)
 	vcs = "git",
 
+	-- Gates the BufWritePre trim-trailing-whitespace autocmd in autocmds.lua.
+	-- Kept outside `options` since it isn't a real vim.opt key.
+	trim_trailing_whitespace = true,
+
 	-- Extra module names to require() once config/options/keymaps are loaded.
 	-- Lets gitignored machine-local files (e.g. lua/local/*.lua) do more than
 	-- just return an overlay table -- they can be full setup modules.

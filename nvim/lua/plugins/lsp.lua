@@ -47,17 +47,17 @@ return {
 				local profile = require("profile")
 				local ensure_installed = {}
 
-				if profile.plugin_enabled("format") then
+				if profile.plugin_enabled("conform.nvim") then
 					vim.list_extend(ensure_installed, {
 						"stylua", "prettier", "shfmt", "goimports", "gofumpt", "clang-format", "sqlfmt",
 					})
 				end
 
-				if profile.plugin_enabled("lint") then
+				if profile.plugin_enabled("nvim-lint") then
 					vim.list_extend(ensure_installed, { "ruff", "eslint_d", "shellcheck" })
 				end
 
-				if profile.plugin_enabled("debug") then
+				if profile.plugin_enabled("nvim-dap") then
 					vim.list_extend(ensure_installed, { "debugpy", "delve", "js-debug-adapter", "codelldb" })
 				end
 

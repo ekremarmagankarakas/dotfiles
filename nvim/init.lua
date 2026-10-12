@@ -34,6 +34,13 @@ end
 require("lazy").setup({
 	spec = plugin_spec,
 	checker = { enabled = false },
+	-- lazy.nvim resets 'runtimepath' on startup; without this it would drop
+	-- the rtp_paths we just prepended above.
+	performance = {
+		rtp = {
+			paths = require("profile").get().rtp_paths,
+		},
+	},
 })
 
 local theme = require("config.theme_picker").load()

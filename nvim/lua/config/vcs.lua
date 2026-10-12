@@ -5,8 +5,9 @@
 -- routed through here instead of calling gitsigns/diffview/telescope
 -- directly. Providers register themselves rather than being baked into a
 -- fixed table, so a gitignored module can add another backend (jj, hg, ...)
--- via M.register_provider without touching this file; profile.vcs picks
--- which registered provider is active.
+-- via M.register_provider without touching this file. get_active_provider()
+-- asks each registered provider's own is_active() predicate (falling back
+-- to the git provider), rather than doing a single static name lookup.
 ----------------------------------------------------------------------
 
 local M = {}
@@ -19,8 +20,12 @@ function M.register_provider(provider)
 end
 
 function M.get_active_provider()
-	local name = require("profile").get().vcs or "git"
-	return providers[name] or providers.git
+	for _, provider in pairs(providers) do
+		if provider.is_active and provider.is_active() then
+			return provider
+		end
+	end
+	return providers.git
 end
 
 -- Back-compat alias
@@ -33,6 +38,10 @@ M.providers = providers
 ----------------------------------------------------------------------
 M.register_provider({
 	name = "git",
+
+	is_active = function()
+		return require("profile").get().vcs == "git"
+	end,
 
 	hunk = {
 		preview = function()
